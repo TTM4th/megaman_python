@@ -1,0 +1,140 @@
+from pygame import Surface, event, transform
+
+from image import EnemyImage
+from pghandler import PygameHandler
+
+runObj = PygameHandler("test_view",(640,320),(128,255,128))
+enemies = EnemyImage()
+ONE_LINE_Y = 0
+TWO_LINE_Y = 64
+THREE_LINE_Y = 128
+FOUR_LINE_Y = 192
+FIVE_LINE_Y = 256
+testProcs:list[tuple[Surface,tuple[int,int]]] = [(enemies.METTOLE_APPEAR,(8,ONE_LINE_Y)),
+												(enemies.METTOLE_HIDE,(28,ONE_LINE_Y)),
+												(enemies.BUMBIE_HELI_B1,(54,ONE_LINE_Y)),
+												(enemies.BUMBIE_HELI_B2,(72,ONE_LINE_Y)),
+												(enemies.BUMBIE_HELI_G1,(90,ONE_LINE_Y)),
+												(enemies.BUMBIE_HELI_G2,(108,ONE_LINE_Y)),
+												(enemies.PICKELMAN_STAND,(132,ONE_LINE_Y)),
+												(enemies.PICKELMAN_BEGIN_THROW,(166,ONE_LINE_Y)),
+												(enemies.PICKELMAN_END_THROW,(200,ONE_LINE_Y)),
+												(enemies.PICKEL,(234,ONE_LINE_Y+5)),
+												(transform.rotate(enemies.PICKEL,90),(252,ONE_LINE_Y+5)),
+												(transform.rotate(enemies.PICKEL,180),(270,ONE_LINE_Y+5)),
+												(transform.rotate(enemies.PICKEL,270),(290,ONE_LINE_Y+5)),
+												(enemies.BIGEYE_BLUE_SHRINK,(308,ONE_LINE_Y+8)),
+												(enemies.BIGEYE_BLUE_GROW,(342,ONE_LINE_Y)),
+												(enemies.BIGEYE_RED_SHRINK,(376,ONE_LINE_Y+8)),
+												(enemies.BIGEYE_RED_GROW,(410,ONE_LINE_Y)),
+												(enemies.BIGEYE_REDORANGE_SHRINK,(444,ONE_LINE_Y+8)),
+												(enemies.BIGEYE_REDORANGE_GROW,(478,ONE_LINE_Y)),
+												(enemies.SUSIE_RED,(8,TWO_LINE_Y)),
+												(enemies.SUSIE_RED_SEMIBLINK,(26,TWO_LINE_Y)),
+												(enemies.SUSIE_RED_BLINK,(44,TWO_LINE_Y)),
+												(enemies.SUSIE_ORANGE,(64,TWO_LINE_Y)),
+												(enemies.SUSIE_ORANGE_SEMIBLINK,(82,TWO_LINE_Y)),
+												(enemies.SUSIE_ORANGE_BLINK,(100,TWO_LINE_Y)),
+												(enemies.SUSIE_BLUE,(120,TWO_LINE_Y)),
+												(enemies.SUSIE_BLUE_SEMIBLINK,(138,TWO_LINE_Y)),
+												(enemies.SUSIE_BLUE_BLINK,(156,TWO_LINE_Y)),
+												(enemies.GABYOLE_BLUE_1,(176,TWO_LINE_Y)),
+												(enemies.GABYOLE_BLUE_2,(194,TWO_LINE_Y)),
+												(enemies.GABYOLE_ORANGE_1,(212,TWO_LINE_Y)),
+												(enemies.GABYOLE_ORANGE_2,(230,TWO_LINE_Y)),
+												(enemies.PEPE_1,(250,TWO_LINE_Y)),
+												(enemies.PEPE_2,(276,TWO_LINE_Y)),
+												(enemies.CUTTER_OPEN,(308,TWO_LINE_Y)),
+												(enemies.CUTTER_CLOSE,(326,TWO_LINE_Y+3)),
+												(enemies.BLASTER_RED_CLOSE,(358,TWO_LINE_Y)),
+												(enemies.BLASTER_RED_OPEN1,(368,TWO_LINE_Y)),
+												(enemies.BLASTER_RED_OPEN2,(378,TWO_LINE_Y)),
+												(enemies.BLASTER_RED_OPEN3,(388,TWO_LINE_Y)),
+												(enemies.BLASTER_ORANGE_CLOSE,(358+54,TWO_LINE_Y)),
+												(enemies.BLASTER_ORANGE_OPEN1,(368+54,TWO_LINE_Y)),
+												(enemies.BLASTER_ORANGE_OPEN2,(378+54,TWO_LINE_Y)),
+												(enemies.BLASTER_ORANGE_OPEN3,(388+54,TWO_LINE_Y)),
+												(enemies.BLASTER_BLUE_CLOSE,(358+54+54,TWO_LINE_Y)),
+												(enemies.BLASTER_BLUE_OPEN1,(368+54+54,TWO_LINE_Y)),
+												(enemies.BLASTER_BLUE_OPEN2,(378+54+54,TWO_LINE_Y)),
+												(enemies.BLASTER_BLUE_OPEN3,(388+54+54,TWO_LINE_Y)),
+												(enemies.MAMBOO_CLOSE,(520,TWO_LINE_Y+5)),
+												(enemies.MAMBOO_OPEN,(538,TWO_LINE_Y)),
+												(enemies.CAMADOOMER_BLUE_SHRINK,(564,TWO_LINE_Y+9)),
+												(enemies.CAMADOOMER_BLUE_GROW,(582,TWO_LINE_Y)),
+												(enemies.CAMADOOMER_RED_SHRINK,(564+40,TWO_LINE_Y+9)),
+												(enemies.CAMADOOMER_RED_GROW,(582+40,TWO_LINE_Y)),
+												(enemies.SCREWDRIVER_ORANGE_OFF,(0,THREE_LINE_Y+8)),
+												(enemies.SCREWDRIVER_ORANGE_1,(18,THREE_LINE_Y)),
+												(enemies.SCREWDRIVER_ORANGE_2,(36,THREE_LINE_Y)),
+												(enemies.SCREWDRIVER_ORANGE_3,(54,THREE_LINE_Y)),
+												(enemies.SCREWDRIVER_BLUE_OFF,(0+80,THREE_LINE_Y+8)),
+												(enemies.SCREWDRIVER_BLUE_1,(18+80,THREE_LINE_Y)),
+												(enemies.SCREWDRIVER_BLUE_2,(36+80,THREE_LINE_Y)),
+												(enemies.SCREWDRIVER_BLUE_3,(54+80,THREE_LINE_Y)),
+												(enemies.SCREWDRIVER_RED_OFF,(0+80+80,THREE_LINE_Y+8)),
+												(enemies.SCREWDRIVER_RED_1,(18+80+80,THREE_LINE_Y)),
+												(enemies.SCREWDRIVER_RED_2,(36+80+80,THREE_LINE_Y)),
+												(enemies.SCREWDRIVER_RED_3,(54+80+80,THREE_LINE_Y)),
+												(enemies.WATCHER_CLOSE,(238,THREE_LINE_Y)),
+												(enemies.WATCHER_SEMIOPEN,(256,THREE_LINE_Y-3)),
+												(enemies.WATCHER_FULLOPEN,(274,THREE_LINE_Y-12)),
+												(enemies.CRAZYRAZY_1,(298,THREE_LINE_Y)),
+												(enemies.CRAZYRAZY_2,(332,THREE_LINE_Y)),
+												(enemies.CRAZYRAZY_3,(364,THREE_LINE_Y)),
+												(enemies.CRAZYRAZY_UP1,(398,THREE_LINE_Y)),
+												(enemies.CRAZYRAZY_UP2,(432,THREE_LINE_Y)),
+												(enemies.CRAZYRAZY_UP3,(466,THREE_LINE_Y)),
+												(enemies.FOOTHOLDER_ORANGE_LEFT1,(506,THREE_LINE_Y)),
+												(enemies.FOOTHOLDER_ORANGE_LEFT2,(532,THREE_LINE_Y)),
+												(enemies.FOOTHOLDER_ORANGE_RIGHT1,(558,THREE_LINE_Y)),
+												(enemies.FOOTHOLDER_ORANGE_RIGHT2,(584,THREE_LINE_Y)),
+												(enemies.FOOTHOLDER_GREEN_LEFT1,(0+8,FOUR_LINE_Y)),
+												(enemies.FOOTHOLDER_GREEN_LEFT2,(26+8,FOUR_LINE_Y)),
+												(enemies.FOOTHOLDER_GREEN_RIGHT1,(52+8,FOUR_LINE_Y)),
+												(enemies.FOOTHOLDER_GREEN_RIGHT2,(78+8,FOUR_LINE_Y)),
+												(enemies.CHUNKY_1,(118,FOUR_LINE_Y)),
+												(enemies.CHUNKY_2,(136,FOUR_LINE_Y)),
+												(enemies.WALLFIRE_SHRINK1,(160,FOUR_LINE_Y)),
+												(enemies.WALLFIRE_SHRINK2,(170,FOUR_LINE_Y)),
+												(enemies.WALLFIRE_GROW1,(180,FOUR_LINE_Y)),
+												(enemies.WALLFIRE_GROW2,(248,FOUR_LINE_Y)),
+												(enemies.JOE_STAND,(320,FOUR_LINE_Y)),
+												(enemies.JOE_FIRE1,(348,FOUR_LINE_Y)),
+												(enemies.JOE_FIRE2,(374,FOUR_LINE_Y)),
+												(enemies.JOE_JUMP,(400,FOUR_LINE_Y)),
+												(enemies.KILLER_RED,(432,FOUR_LINE_Y)),
+												(enemies.KILLER_ORANGE,(456,FOUR_LINE_Y)),
+												(enemies.KILLER_BLUE,(480,FOUR_LINE_Y)),
+												(enemies.BBBOMB_MOTHER_RED,(500,FOUR_LINE_Y)),
+												(enemies.BBBOMB_CHILD_RED,(518,FOUR_LINE_Y+6)),
+												(enemies.BBBOMB_MOTHER_BLUE,(500+28,FOUR_LINE_Y)),
+												(enemies.BBBOMB_CHILD_BLUE,(518+28,FOUR_LINE_Y+6)),
+												(enemies.LIFT_GREEN,(560,FOUR_LINE_Y)),
+												(enemies.LIFT_GREEN_FOLD_MIDDLE,(600,FOUR_LINE_Y)),
+												(enemies.LIFT_GREEN_FOLD,(626,FOUR_LINE_Y)),
+												(enemies.LIFT_RED,(0+8,FIVE_LINE_Y)),
+												(enemies.LIFT_RED_FOLD_MIDDLE,(40+8,FIVE_LINE_Y)),
+												(enemies.LIFT_RED_FOLD,(66+8,FIVE_LINE_Y)),
+												(enemies.WALLTHUNDER_1,(90,FIVE_LINE_Y)),
+												(enemies.WALLTHUNDER_2,(158,FIVE_LINE_Y)),
+												(enemies.BULLET_RED,(230,FIVE_LINE_Y)),
+												(enemies.BULLET_ORANGE,(238,FIVE_LINE_Y)),
+												(enemies.BULLET_GREEN,(246,FIVE_LINE_Y)),
+												(enemies.BULLET_BLUE,(254,FIVE_LINE_Y)),
+												(enemies.WATCHER_BEAM1,(268,FIVE_LINE_Y)),
+												(enemies.WATCHER_BEAM2,(268,FIVE_LINE_Y+36))]
+
+def main():
+	runObj.run(testing_process,event_capture)
+		
+def testing_process(screen:Surface):
+	for obj_tuple in testProcs:
+		screen.blit(obj_tuple[0],obj_tuple[1])
+		
+def event_capture(events:list[event.Event]) -> None:
+	pass
+
+if __name__ =="__main__":
+	main()
+
