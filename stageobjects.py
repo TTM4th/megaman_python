@@ -312,7 +312,7 @@ class EnemyData:
     inity:int
     
 class MapConstant():
-    MAP_PATH = {StageEnum.TEST:"map/s_enemytest.txt",StageEnum.CUTMAN:"map/s_cutman.txt"}
+    MAP_PATH = {StageEnum.TEST:"map/s_enemytest_emit_bullet.txt",StageEnum.CUTMAN:"map/s_cutman.txt"}
     START_SET = {StageEnum.TEST:(7,13),StageEnum.CUTMAN:(8,129)}
     MASTER_SET = {StageEnum.TEST:(0,15),StageEnum.CUTMAN:(203,56)}
     TILE_SET = {StageEnum.TEST:CutManTile,StageEnum.CUTMAN:CutManTile}
