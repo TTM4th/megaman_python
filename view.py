@@ -23,7 +23,7 @@ class PlayingView:
         self.PRINT_SCREEN_PIXEL_DIFF = 8
         self.WINDOW_HEIGHT = windowrect.height
         self.INTERNAL_HEIGHT = self.WINDOW_HEIGHT + self.INTERNAL_AND_WINDOW_HEIGHT_DIFF
-        self.objmgr = ObjManager(StageEnum.CUTMAN, self.WINDOW_WIDTH, self.INTERNAL_HEIGHT)
+        self.objmgr = ObjManager(StageEnum.TEST, self.WINDOW_WIDTH, self.INTERNAL_HEIGHT)
         self.e_mgr = EnemyManager(self.objmgr.enemy_data,self.WINDOW_WIDTH)
         self.player = PlayerHandler(self.objmgr.start_point[0], self.objmgr.start_point[1],windowrect)
         self.screen_startX = (self.player.playerbox.x // self.WINDOW_WIDTH) * self.WINDOW_WIDTH

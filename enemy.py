@@ -1,4 +1,3 @@
-from cmath import rect
 from enum import Enum
 from math import cos, sin,radians
 import random
@@ -55,8 +54,8 @@ class Enemy():
     def update(self) -> None:
         if not(self._ismovable):return
         else:
-            self._print_rect.x += self.vx
-            self._print_rect.y += self.vy
+            self._print_rect.centerx += self.vx
+            self._print_rect.centery += self.vy
         
     def draw(self, screen_startx: int, screen_starty: int, surface: Surface) -> None:
         surface.blit(self._image, (self._print_rect.x-screen_startx,
@@ -106,8 +105,8 @@ class Mettole(EmittableEnemy):
         self.OPENING_COUNT=36
         self.ONELOOPTIME = self.CLOSING_COUNT + self.OPENING_COUNT
         BULLET_V_SCALAR = 3
-        self.__BULLET_V_LEFT:set[tuple] = {(-BULLET_V_SCALAR,BULLET_V_SCALAR),(-BULLET_V_SCALAR,0),(-BULLET_V_SCALAR,-BULLET_V_SCALAR)}
-        self.__BULLET_V_RIGHT:set[tuple] = {(BULLET_V_SCALAR,BULLET_V_SCALAR),(BULLET_V_SCALAR,0),(BULLET_V_SCALAR,-BULLET_V_SCALAR)}
+        self.__BULLET_V_LEFT:set[tuple] = {(-BULLET_V_SCALAR * COS45, BULLET_V_SCALAR * SIN45), (-BULLET_V_SCALAR, 0), (-BULLET_V_SCALAR * COS45, -BULLET_V_SCALAR * SIN45)}
+        self.__BULLET_V_RIGHT:set[tuple] = {(BULLET_V_SCALAR * COS45, BULLET_V_SCALAR * SIN45), (BULLET_V_SCALAR, 0), (BULLET_V_SCALAR * COS45, -BULLET_V_SCALAR * SIN45)}
         self.reset_process()
 
     def reset_process(self) -> None:
@@ -204,7 +203,7 @@ class Blaster(EmittableEnemy):
             velos = self.BULLET_V_RIGHT
             x = self.print_rect.right
         v = velos[self.__emit_bullet_counter]
-        return {EnemyBullet(x,self.print_rect.centery,v[0],v[1],self.color)}
+        return {EnemyBullet(x, self.print_rect.centery, v[0], v[1], self.color)}
 
 
     def draw(self, screen_startx: int, screen_starty: int, surface: Surface) -> None:
@@ -312,16 +311,16 @@ class ScrewDriver(EmittableEnemy):
         self.MAXSHOTCOUNT = 3
         BULLETWIDTH = 6
         BULLET_V_SCALAR = 4
-        self.__BULLET_V:set[tuple] = {(self.print_rect.left-BULLETWIDTH,self.print_rect.top,-BULLET_V_SCALAR,0),
-                                (self.print_rect.left,self.print_rect.top-BULLETWIDTH,-BULLET_V_SCALAR*COS45,-BULLET_V_SCALAR*SIN45),
-                                (self.print_rect.centerx-BULLETWIDTH/2,self.print_rect.top-BULLETWIDTH,0,-BULLET_V_SCALAR),
-                                (self.print_rect.right-BULLETWIDTH,self.print_rect.top-BULLETWIDTH,BULLET_V_SCALAR*COS45,-BULLET_V_SCALAR*SIN45),
-                                (self.print_rect.right,self.print_rect.top,BULLET_V_SCALAR,0)}
-        self.__BULLET_V_U_DOWN:set[tuple] = {(self.print_rect.left-BULLETWIDTH,self.print_rect.bottom,-BULLET_V_SCALAR,0),
-                                            (self.print_rect.left,self.print_rect.bottom+BULLETWIDTH,-BULLET_V_SCALAR*COS45,BULLET_V_SCALAR*SIN45),
-                                            (self.print_rect.centerx-3,self.print_rect.bottom+BULLETWIDTH,0,BULLET_V_SCALAR),
-                                            (self.print_rect.right-BULLETWIDTH,self.print_rect.bottom+BULLETWIDTH,BULLET_V_SCALAR*COS45,BULLET_V_SCALAR*SIN45),
-                                            (self.print_rect.right,self.print_rect.bottom,BULLET_V_SCALAR,0)}
+        self.__BULLET_V:set[tuple] = {(self.print_rect.left, self.print_rect.top, -BULLET_V_SCALAR, 0),
+                                (self.print_rect.left, self.print_rect.top - BULLETWIDTH, -BULLET_V_SCALAR*COS45, -BULLET_V_SCALAR*SIN45),
+                                (self.print_rect.centerx, self.print_rect.top - BULLETWIDTH, 0, -BULLET_V_SCALAR),
+                                (self.print_rect.right, self.print_rect.top - BULLETWIDTH, BULLET_V_SCALAR*COS45, -BULLET_V_SCALAR*SIN45),
+                                (self.print_rect.right, self.print_rect.top, BULLET_V_SCALAR, 0)}
+        self.__BULLET_V_U_DOWN:set[tuple] = {(self.print_rect.left, self.print_rect.bottom, -BULLET_V_SCALAR, 0),
+                                            (self.print_rect.left, self.print_rect.bottom + BULLETWIDTH, -BULLET_V_SCALAR * COS45, BULLET_V_SCALAR * SIN45),
+                                            (self.print_rect.centerx, self.print_rect.bottom + BULLETWIDTH, 0, BULLET_V_SCALAR),
+                                            (self.print_rect.right, self.print_rect.bottom + BULLETWIDTH, BULLET_V_SCALAR * COS45, BULLET_V_SCALAR * SIN45),
+                                            (self.print_rect.right, self.print_rect.bottom, BULLET_V_SCALAR, 0)}
         self.upside_down = False
         self.reset_process()
 
@@ -958,6 +957,11 @@ class SuperCutter(Enemy):
 
 
 class EnemyBullet(Enemy):
+    # param x : 発射元の銃口X座標 ※自然な位置から発射するように見せたい場合は、呼び出し元オブジェクトで調節した座標値を渡す必要がある
+    # param y : 発射元の銃口Y座標 ※自然な位置から発射するように見せたい場合は、呼び出し元オブジェクトで調節した座標値を渡す必要がある
+    # param vx : 水平方向弾速
+    # param vy : 垂直方向弾速
+    # param color : 弾の色情報
     def __init__(self, x: int, y: int, vx:int, vy:int, color:EnemyColor) -> None:
                 
         if color == EnemyColor.RED:
@@ -972,7 +976,10 @@ class EnemyBullet(Enemy):
             images = [IMAGES.BULLET_YELLOW]
         else:
             raise ValueError("Invalid Color Information by argument value")
-        super().__init__(Rect(x,y,6,6), images , False)
+        self.BULLET_WIDTH = 6
+        x = x - self.BULLET_WIDTH / 2
+        y = y - self.BULLET_WIDTH / 2
+        super().__init__(Rect(x, y, self.BULLET_WIDTH, self.BULLET_WIDTH), images , False)
         self.vx=vx
         self.vy=vy
         self._ismovable = True
@@ -1029,6 +1036,8 @@ class EnemyManager:
             color = EnemyLibrary.COLOR_DICTIONARY.get(c_id)
             if e_id == "E00":
                 obj:Enemy = EnemyLibrary.ENEMY_DICTIONARY.get(e_id)(data.initx,data.inity,0,0,color)
+            elif e_id == "E01":
+                obj:Mettole = Mettole(data.initx,data.inity)
             else :
                 obj:Enemy = EnemyLibrary.ENEMY_DICTIONARY.get(e_id)(data.initx,data.inity,color)
         else:
