@@ -1,5 +1,5 @@
 from enum import Enum
-from math import cos, sin,radians
+from math import cos, sin, radians
 import random
 from pygame import Rect,Surface,transform
 
@@ -7,8 +7,10 @@ from image import EnemyImage
 from stageobjects import EnemyData
 from weapons import BulletObject
 IMAGES = EnemyImage()
-SIN45=sin(radians(45))
-COS45=cos(radians(45))
+SIN45 = sin(radians(45))
+COS45 = cos(radians(45))
+SIN15 = sin(radians(15))
+COS15 = cos(radians(15))
 class EnemyColor(Enum):
     RED=0
     BLUE=1
@@ -172,8 +174,15 @@ class Blaster(EmittableEnemy):
         self.OPENING_FRAME = 6
         self.FULLOPEN_COUNT = 100
         self.ONELOOPTIME = self.FULLCLOSING_COUNT + self.FULLOPEN_COUNT + self.OPENING_FRAME * 4
-        self.BULLET_V_LEFT = [(-1,-4),(-4,-1),(-4,1),(-1,4)]
-        self.BULLET_V_RIGHT = [(1,-4),(4,-1),(4,1),(1,4)]
+        self.V_SCALAR = 4
+        self.BULLET_V_LEFT = [(-self.V_SCALAR * COS45, -self.V_SCALAR * SIN45),
+                              (-self.V_SCALAR * COS15, -self.V_SCALAR * SIN15),
+                              (-self.V_SCALAR * COS15, self.V_SCALAR * SIN15),
+                              (-self.V_SCALAR * COS45, self.V_SCALAR * SIN45)]
+        self.BULLET_V_RIGHT = [(self.V_SCALAR * COS45, -self.V_SCALAR * SIN45),
+                               (self.V_SCALAR * COS15, -self.V_SCALAR * SIN15),
+                               (self.V_SCALAR * COS15, self.V_SCALAR * SIN15),
+                               (self.V_SCALAR * COS45, self.V_SCALAR * SIN45)]
         self.EMIT_TIMINGS = [13,38,62,87]
         self.reset_process()
 
