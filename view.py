@@ -34,7 +34,7 @@ class PlayingView:
         #スクリーン表示範囲内のオブジェクト抽出
         self.objmgr.get_objs_on_screen(self.screen_startX)
 
-        self.SCROLLY_V = 2
+        self.SCROLLY_V = 4
         self.__is_scrolling_process:function = None
         self.__force_playermove:function = None
 
