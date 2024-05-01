@@ -2,7 +2,7 @@
 
 from pygame import event,Surface
 from pghandler import PygameHandler
-handler = PygameHandler("Megaman",(256,224),(0,0,0))
+handler = PygameHandler(3, (0, 0, 0))
 from view import PlayingView
 playing_view =  PlayingView(handler.screen.get_rect())
 
