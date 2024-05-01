@@ -563,8 +563,12 @@ class keyInputState:
 
     # 押下した操作用キー情報からクラス内のフラグを更新する
     def catch_keydown(self, downkey: int) -> None:
-        if downkey == locals.K_RIGHT:self._ispressed_R = True
-        elif downkey == locals.K_LEFT:self._ispressed_L = True
+        if downkey == locals.K_RIGHT:
+            self._ispressed_R = True
+            self._ispressed_L = False
+        elif downkey == locals.K_LEFT:
+            self._ispressed_L = True
+            self._ispressed_R = False
         elif downkey == locals.K_z:self._ispressed_Z = True
         elif downkey == locals.K_x:self._ispressed_X = True
         elif downkey == locals.K_DOWN:self._ispressed_down = True
