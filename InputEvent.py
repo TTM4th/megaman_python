@@ -1,8 +1,8 @@
+from __future__ import annotations
 from abc import ABCMeta, abstractmethod
 from pygame import locals
 from pygame.event import Event
 from enum import Enum
-from __future__ import annotations
 
 class InputEventContoller:
 
@@ -15,8 +15,11 @@ class InputEventContoller:
         self.FIREActions = {InputState.Start:actions.FIREKeyStart, InputState.Continue:actions.FIREKeyContinue, InputState.Cancel:actions.FIREKeyCancel}
         self.JUMPActions = {InputState.Start:actions.JUMPKeyStart, InputState.Continue:actions.JUMPKeyContinue, InputState.Cancel:actions.JUMPKeyCancel}
 
-    def DoActions(self, events:list[Event]) -> None:
+    def AggregateEvents(self, events:list[Event]) -> None:
         self.keyinput.catchInput(events)
+        """todo:プレイヤーのリアクション処理をkeyinput.catchInputの後で受け取る"""
+
+    def DoActions(self) -> None:
         for k,v in self.keyinput.__inputtedStates.items():
             actions = self.__ActionFactory(k)
             for action in actions[v]:
@@ -36,6 +39,9 @@ class InputEventContoller:
         elif keycode == locals.K_JUMP:
             return self.JUMPActions
 
+"""
+キー入力の開始・継続・キャンセル状態フラグ
+"""
 class InputKey(Enum):
     Up = 0
     Down = 1
@@ -44,6 +50,9 @@ class InputKey(Enum):
     FIRE = 4
     JUMP = 5
 
+"""
+キー入力の開始・継続・キャンセル状態フラグ
+"""
 class InputState(Enum):
     NoneInput = 0
     Start = 1
@@ -78,14 +87,23 @@ class KeyInput:
                     self.__inputtedStates[event.Key] = InputState.Start
             
 class IInputActions(metaclass = ABCMeta): 
+    """
+    カーソル上押下開始時のイベント
+    """
     @abstractmethod
     def UPKeyStart(self):
         pass
     
+    """
+    カーソル上押下継続時のイベント
+    """
     @abstractmethod
     def UPKeyContinue(self):
         pass
 
+    """
+    カーソル上押下解除時のイベント
+    """
     @abstractmethod
     def UPKeyCancel(self):
         pass
