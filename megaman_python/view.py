@@ -1,9 +1,9 @@
 from enum import IntEnum
 from typing import Callable
 from pygame import Rect,event
-from megaman_python.stageobjects import ObjManager,StageEnum
-from megaman_python.player import PlayerHandler
-from megaman_python.enemy import EnemyManager
+from .stageobjects import ObjManager,StageEnum
+from .player import PlayerHandler
+from .enemy import EnemyManager
 
 class ScrollYFlag(IntEnum):
     UP = -1

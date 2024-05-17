@@ -3,10 +3,10 @@ from __future__ import annotations
 import pygame.transform
 from pygame import Rect, Surface, locals
 from pygame.event import Event
-from megaman_python.image import CharaImageSource, Meter
-from megaman_python.weapons import FireHandler, BulletObject
-from megaman_python.stageobjects import ObjManager
-from megaman_python.enemy import Enemy
+from .image import CharaImageSource, Meter
+from .weapons import FireHandler, BulletObject
+from .stageobjects import ObjManager
+from .enemy import Enemy
 
 
 class PlayerHandler:

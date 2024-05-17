@@ -1,6 +1,6 @@
 from __future__ import annotations
 from pygame import Rect, Surface
-from megaman_python.image import BusterBulletImage
+from .image import BusterBulletImage
 
 class FireHandler:
     def __init__(self, scrwidth: int, scrheight: int) -> None:

@@ -3,9 +3,9 @@ from math import cos, sin, radians
 import random
 from pygame import Rect,Surface,transform
 
-from megaman_python.image import EnemyImage
-from megaman_python.stageobjects import EnemyData
-from megaman_python.weapons import BulletObject
+from .image import EnemyImage
+from .stageobjects import EnemyData
+from .weapons import BulletObject
 IMAGES = EnemyImage()
 SIN45 = sin(radians(45))
 COS45 = cos(radians(45))

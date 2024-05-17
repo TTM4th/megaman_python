@@ -1,7 +1,7 @@
 import sys
 from typing import Callable
 import pygame
-from pygame import display,Surface,time,event,locals
+from pygame import display, Surface, time, event, locals
 
 class PygameHandler:
 
