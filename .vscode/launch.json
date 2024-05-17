@@ -12,14 +12,6 @@
             "console": "integratedTerminal"
         },
         {
-            "name": "Python: Debug Tests",
-            "type": "debugpy",
-            "request": "launch",
-            "purpose": ["debug-test"],
-            "console": "integratedTerminal",
-            "justMyCode": false,
-        },
-        {
             "name": "Python: Test Enemy Anime",
             "type": "debugpy",
             "request": "launch",
