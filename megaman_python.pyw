@@ -1,9 +1,9 @@
 #import logging
 
 from pygame import event,Surface
-from pghandler import PygameHandler
+from megaman_python.pghandler import PygameHandler
 handler = PygameHandler(3, (0, 0, 0))
-from view import PlayingView
+from megaman_python.view import PlayingView
 playing_view =  PlayingView(handler.screen.get_rect())
 
 def main():

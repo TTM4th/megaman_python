@@ -4,15 +4,30 @@
     // 詳細情報は次を確認してください: https://go.microsoft.com/fwlink/?linkid=830387
     "version": "0.2.0",
     "configurations": [
+        
+
         {
             "name": "Python: Current File",
-            "type": "python",
+            "type": "debugpy",
             "request": "launch",
             //"program": "${file}",
             "program": "${workspaceFolder}/megaman_python.pyw",
             //"program": "${workspaceFolder}/enemy_anime_test.py",
             //"program": "${workspaceFolder}/enemyimage_test.py",
             "console": "integratedTerminal"
+        },
+        {
+            "name": "Python: Debug Tests",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${file}",
+            "purpose": ["debug-test"],
+            "console": "integratedTerminal",
+            "justMyCode": false,
+            "env": {
+                "PYTHONPATH": "./"
+            }
         }
     ]
+    
 }

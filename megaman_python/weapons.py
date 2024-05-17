@@ -1,10 +1,10 @@
 from __future__ import annotations
 from pygame import Rect, Surface
-import image
+from megaman_python.image import BusterBulletImage
 
 class FireHandler:
     def __init__(self, scrwidth: int, scrheight: int) -> None:
-        self.bulletImage = image.BusterBulletImage().BUSTERBULLET
+        self.bulletImage = BusterBulletImage().BUSTERBULLET
         self.__MAXBULLETS = 3
         self._bullets: list[BulletObject] = []*self.__MAXBULLETS
         self.SCREENWIDTH = scrwidth

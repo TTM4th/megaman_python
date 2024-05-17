@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Callable, Generator
 from pygame import Rect,Surface
-from image import CutManTile
+from megaman_python.image import CutManTile
 
 class StageEnum(Enum):
     TEST = 0

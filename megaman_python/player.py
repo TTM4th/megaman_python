@@ -3,10 +3,10 @@ from __future__ import annotations
 import pygame.transform
 from pygame import Rect, Surface, locals
 from pygame.event import Event
-import image
-from weapons import FireHandler, BulletObject
-from stageobjects import ObjManager
-from enemy import Enemy
+from megaman_python.image import CharaImageSource, Meter
+from megaman_python.weapons import FireHandler, BulletObject
+from megaman_python.stageobjects import ObjManager
+from megaman_python.enemy import Enemy
 
 
 class PlayerHandler:
@@ -19,7 +19,7 @@ class PlayerHandler:
         self.__graphic_handler = GraphicHandler()
         self.__control_dictionary = {
            locals.KEYDOWN: self.state.catch_keydown, locals.KEYUP: self.state.catch_keyup}
-        self.__meter = image.Meter()
+        self.__meter = Meter()
         self.image = self.__graphic_handler.standing_image(
             self.__player_timer.stand_timer, self.state)
         self.printrect = self.playerbox.printRect(self.state,self.image)
@@ -368,7 +368,7 @@ class MotionHandler:
 # プレイヤーイメージの表示ロジッククラス
 class GraphicHandler:
     def __init__(self) -> None:
-        self.__IMAGE = image.CharaImageSource()
+        self.__IMAGE = CharaImageSource()
         self.__RUNPIC: list[Surface] = [
             self.__IMAGE.RUN1, self.__IMAGE.RUN2, self.__IMAGE.RUN3]
         self.__RUNEACH = 8
