@@ -65,7 +65,7 @@ class InputEventContoller:
 class KeyMapper:
     def __init__(self):
         """入力キーとゲーム内使用キーの値ペア Dictionary"""
-        self.MapKeys:dict[int, InputKey]
+        self.MapKeys:dict[int, InputKey] = dict()
 
     """
     第1引数と第2引数の値ペアをMapKeysに追加する
@@ -73,7 +73,7 @@ class KeyMapper:
     第2引数：マップ先 ゲーム内使用キーフラグ
     """
     def AddMap(self, inputKeyValue:int, targetMapKey:InputKey):
-        self.MapKeys.Add(inputKeyValue, targetMapKey)
+        self.MapKeys[inputKeyValue] = targetMapKey
 
     """
     AddMapでマップされたMapKeysのvalues()をキーに、それぞれの入力情報（初期値：未入力）の値ペア Dictionaryを返す

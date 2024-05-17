@@ -1,9 +1,9 @@
 
 from pygame import Surface,event
-from pghandler import PygameHandler
+from megaman_python.pghandler import PygameHandler
 runObj = PygameHandler("test_view",(640,128),(128,255,128))
-from player import BulletObject
-from enemy import EnemyData,EnemyManager
+from megaman_python.player import BulletObject
+from megaman_python.enemy import EnemyData,EnemyManager
 
 ONE_LINE_Y = 0
 ONE_SCREEN_START = 0

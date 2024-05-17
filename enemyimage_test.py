@@ -1,7 +1,7 @@
 from pygame import Surface, event, transform
 
-from image import EnemyImage
-from pghandler import PygameHandler
+from megaman_python.image import EnemyImage
+from megaman_python.pghandler import PygameHandler
 
 runObj = PygameHandler("test_view",(640,320),(128,255,128))
 enemies = EnemyImage()

@@ -1,6 +1,6 @@
 from unittest import TestCase
-import InputEvent
-from deepdiff import DeepDiff
+from megaman_python import InputEvent
+from pygame import locals
 class Test_InputEvent(TestCase):
 
     def setUp(self) -> None:
@@ -21,5 +21,5 @@ class Test_InputEvent(TestCase):
                 locals.K_RIGHT : InputEvent.InputKey.RIGHT,
                 locals.K_x : InputEvent.InputKey.FIRE,
                 locals.K_z : InputEvent.InputKey.JUMP}
-        self.assertEqual(DeepDiff(ans,self.test_mapper.CreateKeyInputStateDictionary))
+        self.assertDictEqual(ans,self.test_mapper.MapKeys)
     
