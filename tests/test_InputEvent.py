@@ -19,9 +19,7 @@ class Test_InputEvent(TestCase):
         mapper.AddMap(locals.K_x, InputEvent.InputKey.FIRE)
         mapper.AddMap(locals.K_z, InputEvent.InputKey.JUMP)
         self.test_mapper = mapper
-        self.test_keyInput = InputEvent.KeyInput(mapper.MapKeys,
-                                                 mapper.CreateKeyInputStateDictionary()
-                                                 )
+        self.test_keyInput = InputEvent.KeyInput(mapper.MapKeys)
         return super().setUp()
     
     """
@@ -36,18 +34,20 @@ class Test_InputEvent(TestCase):
                 locals.K_z : InputEvent.InputKey.JUMP}
         self.assertDictEqual(ans,self.test_mapper.MapKeys)
     
+    
     """
-    setUpでKeyMapperに渡した ゲーム中の割当キー と 入力状態（初期値：未入力）のペアが作成できるか
+    setUpでKeyInputに渡した 入力対象キー と ゲーム中の割当キーのペアから ゲーム中の割り当てキー と 入力状態（初期値：未入力）のペアが初期値としてInputtedStatesに割り当てられるか
     """
-    def test_CreateKeyInputStateDictionary(self):
+    def test_KeyInput_InitInputtedStates(self):
         ans = {InputEvent.InputKey.Up : InputEvent.InputState.NoneInput,
                 InputEvent.InputKey.Down : InputEvent.InputState.NoneInput,
                 InputEvent.InputKey.LEFT : InputEvent.InputState.NoneInput,
                 InputEvent.InputKey.RIGHT : InputEvent.InputState.NoneInput,
                 InputEvent.InputKey.FIRE : InputEvent.InputState.NoneInput,
                 InputEvent.InputKey.JUMP : InputEvent.InputState.NoneInput}
-        self.assertDictEqual(ans, self.test_mapper.CreateKeyInputStateDictionary())
-    
+        self.test_keyInput.catchInput([])
+        self.assertDictEqual(ans, self.test_keyInput.InputtedStates)
+
     """
     キー押下イベントを検知した検証対象のキーが未入力→入力開始状態に更新される
     """
@@ -68,3 +68,79 @@ class Test_InputEvent(TestCase):
                 InputEvent.InputKey.JUMP : InputEvent.InputState.Start}
         self.test_keyInput.catchInput(params)
         self.assertDictEqual(ans, self.test_keyInput.InputtedStates)
+
+    """
+    入力キーがCancelの状態からcatchInputで更新がない場合は、入力キー状態がNoneに変更される
+    """
+
+    def test_ReleaseKeyInput(self):
+        self.test_keyInput.InputtedStates = {InputEvent.InputKey.Up : InputEvent.InputState.Cancel,
+                                            InputEvent.InputKey.Down : InputEvent.InputState.Cancel,
+                                            InputEvent.InputKey.LEFT : InputEvent.InputState.Cancel,
+                                            InputEvent.InputKey.RIGHT : InputEvent.InputState.Cancel,
+                                            InputEvent.InputKey.FIRE : InputEvent.InputState.Cancel,
+                                            InputEvent.InputKey.JUMP : InputEvent.InputState.Cancel}
+            
+        ans = {InputEvent.InputKey.Up : InputEvent.InputState.NoneInput,
+                InputEvent.InputKey.Down : InputEvent.InputState.NoneInput,
+                InputEvent.InputKey.LEFT : InputEvent.InputState.NoneInput,
+                InputEvent.InputKey.RIGHT : InputEvent.InputState.NoneInput,
+                InputEvent.InputKey.FIRE : InputEvent.InputState.NoneInput,
+                InputEvent.InputKey.JUMP : InputEvent.InputState.NoneInput}
+        self.test_keyInput.catchInput([])
+        self.assertDictEqual(ans, self.test_keyInput.InputtedStates)
+
+    """
+    キー押下イベントを検知した検証対象のキーが以前の入力状態から更新される
+    """
+    def test_KeyInput(self):
+        self.test_keyInput.InputtedStates[InputEvent.InputKey.Up] = InputEvent.InputState.Start
+        self.test_keyInput.InputtedStates[InputEvent.InputKey.Down] = InputEvent.InputState.Continue
+        self.test_keyInput.InputtedStates[InputEvent.InputKey.LEFT] = InputEvent.InputState.Start
+        self.test_keyInput.InputtedStates[InputEvent.InputKey.RIGHT] = InputEvent.InputState.Cancel
+        self.test_keyInput.InputtedStates[InputEvent.InputKey.FIRE] = InputEvent.InputState.Cancel
+        self.test_keyInput.InputtedStates[InputEvent.InputKey.JUMP] = InputEvent.InputState.NoneInput
+        params = [
+            event.Event(locals.KEYDOWN, key = locals.K_UP),
+            event.Event(locals.KEYUP, key = locals.K_DOWN),
+            event.Event(locals.KEYUP, key = locals.K_LEFT),
+            event.Event(locals.KEYDOWN, key = locals.K_x),
+        ]
+        ans = {InputEvent.InputKey.Up : InputEvent.InputState.Continue,
+                InputEvent.InputKey.Down : InputEvent.InputState.Cancel,
+                InputEvent.InputKey.LEFT : InputEvent.InputState.Cancel,
+                InputEvent.InputKey.RIGHT : InputEvent.InputState.NoneInput,
+                InputEvent.InputKey.FIRE : InputEvent.InputState.Start,
+                InputEvent.InputKey.JUMP : InputEvent.InputState.NoneInput}
+        self.test_keyInput.catchInput(params)
+        self.assertDictEqual(ans, self.test_keyInput.InputtedStates)
+    
+    """
+    同じキーのイベントが複数検知した場合、検証対象のキー最後に検知したイベントのキー値になる
+    """
+    def test_SameKeyInput(self):
+        self.test_keyInput.InputtedStates[InputEvent.InputKey.LEFT] = InputEvent.InputState.Start
+        self.test_keyInput.InputtedStates[InputEvent.InputKey.RIGHT] = InputEvent.InputState.Continue
+        self.test_keyInput.InputtedStates[InputEvent.InputKey.FIRE] = InputEvent.InputState.Continue
+        self.test_keyInput.InputtedStates[InputEvent.InputKey.JUMP] = InputEvent.InputState.Continue
+        params = [
+            event.Event(locals.KEYDOWN, key = locals.K_UP),
+            event.Event(locals.KEYDOWN, key = locals.K_UP),
+            event.Event(locals.KEYDOWN, key = locals.K_DOWN),
+            event.Event(locals.KEYUP, key = locals.K_DOWN),
+            event.Event(locals.KEYDOWN, key = locals.K_DOWN),
+            event.Event(locals.KEYUP, key = locals.K_x),
+            event.Event(locals.KEYUP, key = locals.K_x),
+            event.Event(locals.KEYUP, key = locals.K_z),
+            event.Event(locals.KEYDOWN, key = locals.K_z),
+        ]
+        ans = {InputEvent.InputKey.Up : InputEvent.InputState.Continue,
+                InputEvent.InputKey.Down : InputEvent.InputState.Start,
+                InputEvent.InputKey.LEFT : InputEvent.InputState.Start,
+                InputEvent.InputKey.RIGHT : InputEvent.InputState.Continue,
+                InputEvent.InputKey.FIRE : InputEvent.InputState.NoneInput,
+                InputEvent.InputKey.JUMP : InputEvent.InputState.Start}
+        self.test_keyInput.catchInput(params)
+        self.assertDictEqual(ans, self.test_keyInput.InputtedStates)
+    
+    

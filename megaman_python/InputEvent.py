@@ -1,3 +1,7 @@
+"""
+コントローラーのキー を ゲーム内で使用するキーにマップし、
+入力されたコントローラーのキーから、ゲーム内で使用するするキーに仮想化したキー入力状態を検知する
+"""
 from __future__ import annotations
 from abc import ABCMeta, abstractmethod
 from pygame import locals
@@ -44,23 +48,13 @@ class InputEventContoller:
         mapper.AddMap(locals.K_RIGHT, InputKey.RIGHT)
         mapper.AddMap(locals.K_x, InputKey.FIRE)
         mapper.AddMap(locals.K_z, InputKey.JUMP)
-        self.KeyInput = KeyInput(mapper.MapKeys, 
-                                 mapper.CreateKeyInputStateDictionary()
-                                )
+        self.KeyInput = KeyInput(mapper.MapKeys)
         self.Actions = mapper.CreateActions()
 
     """入力キーの検知・検知した各種イベントに応じて入力キーの状態を更新する"""
     def AggregateEvents(self, events:list[Event]) -> None:
         self.KeyInput.catchInput(events)
         """todo:プレイヤーのリアクション処理をkeyinput.catchInputの後で受け取る"""
-
-    """AggregateEventsで検知した入力キーの状態に応じたアクションを実行する"""
-    def DoActions(self) -> None:
-        for k, v in self.KeyInput.InputtedStates.items():
-            act = next(_ for _ in self.Actions if _.MappedKey == k)
-            if v == InputState.Start : act.Start()
-            elif v == InputState.Continue : act.Continue()
-            elif v == InputState.Cancel : act.Cancel()
 
 class KeyMapper:
     def __init__(self):
@@ -74,25 +68,13 @@ class KeyMapper:
     """
     def AddMap(self, inputKeyValue:int, targetMapKey:InputKey):
         self.MapKeys[inputKeyValue] = targetMapKey
-
-    """
-    AddMapでマップされたMapKeysのvalues()をキーに、それぞれの入力情報（初期値：未入力）の値ペア Dictionaryを返す
-    """
-    def CreateKeyInputStateDictionary(self):
-        return ({_ : InputState.NoneInput for _ in self.MapKeys.values() })
     
-    """
-    AddMapでマップされたMapKeysで設定されたゲーム内キーをマップしたInputActionsクラスのリストを返す
-    """
-    def CreateActions(self):
-        return [IInputActions(_) for _ in self.MapKeys.values()]
-
 class KeyInput:
     """
     第1引数： 入力キー:ゲーム内のマップ先キー dictionary
     第2引数： ゲーム内のマップ先キー:入力キー状態フラグ dictionary
     """
-    def __init__(self, keyMap:dict[int, InputKey], inputStateDict:dict[InputKey, InputState]) -> None:
+    def __init__(self, keyMap:dict[int, InputKey]) -> None:
         """
         入力キー→ゲーム内使用キー変換用dictionary
         """
@@ -100,7 +82,7 @@ class KeyInput:
         """
         ゲーム内使用キー別の入力キー状態フラグを格納する dictionary
         """
-        self.InputtedStates = inputStateDict
+        self.InputtedStates = {_ : InputState.NoneInput for _ in self.__Mappedkey.values() }
         
         """
         ゲーム内使用キーのリスト
@@ -111,21 +93,24 @@ class KeyInput:
     引数で受け取ったイベントから入力キーを検知し、入力キー別の状態フラグを更新する
     """
     def catchInput(self, events:list[Event]) -> None:
-        for value in self.InputtedStates.values() :
-            if value != InputState.Cancel : continue
-            value = InputState.NoneInput
-
-        for event in filter(lambda x: (x.type == locals.KEYDOWN or x.type == locals.KEYUP)
-                            and (self.__Mappedkey[x.key] in self.__targetKeys), 
+        for key in self.InputtedStates.keys():
+            if self.InputtedStates[key] == InputState.Cancel:
+                self.InputtedStates[key] = InputState.NoneInput
+        for event in filter(lambda x: (self.__Mappedkey[x.key] in self.__targetKeys), 
                             events):
             inputtedKey = self.__Mappedkey[event.key]
+            evalInput = self.InputtedStates[inputtedKey]
             if event.type == locals.KEYUP:
-                self.InputtedStates[inputtedKey] = InputState.Cancel
+                if evalInput == InputState.Start or evalInput == InputState.Continue:
+                    self.InputtedStates[inputtedKey] = InputState.Cancel
+                elif evalInput == InputState.Cancel:
+                    self.InputtedStates[inputtedKey] = InputState.NoneInput
             elif event.type == locals.KEYDOWN:
-                if self.InputtedStates[inputtedKey] == InputState.Start:
+                if evalInput == InputState.Start:
                     self.InputtedStates[inputtedKey] = InputState.Continue
                 else:
                     self.InputtedStates[inputtedKey] = InputState.Start
+
                     
 """入力開始・継続・解除別の処理を用意したインターフェース"""
 class IInputActions(metaclass = ABCMeta):
