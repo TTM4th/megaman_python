@@ -29,7 +29,7 @@ class PlayerHandler:
     #敵オブジェクトの接触チェック
     def check_hit(self,enemies:set[Enemy]):
         is_prevhit = self.state.ishit
-        self.state.check_hit(self.playerbox,enemies)
+        self.state.check_hit(self.playerbox.hitbox,enemies)
         if is_prevhit != self.state.ishit:
             self.motion.reset_vx()
         if self.state.ishit:
@@ -713,9 +713,9 @@ class PlayerState(keyInputState):
         return self.__iscrawling
 
     #敵との接触をチェックする
-    def check_hit(self,player: PlayerBox, enemyobjs:set[Enemy])->None:
-        if not(self.isinvisible) and any(_ for _ in enemyobjs if player.hitbox.colliderect(_.hitrect) and _.live ):
-            dmg = next(_ for _ in enemyobjs if player.hitbox.colliderect(_.hitrect)).attack
+    def check_hit(self, playerBox: Rect, enemyobjs:set[Enemy])->None:
+        if not(self.isinvisible) and any(_ for _ in enemyobjs if playerBox.colliderect(_.hitrect) and _.live ):
+            dmg = next(_ for _ in enemyobjs if playerBox.colliderect(_.hitrect)).attack
             self.health -= dmg
             self.hittimer = 1
             #print(self.health,dmg)
