@@ -1,5 +1,6 @@
 from __future__ import annotations
 from enum import Enum
+from pygame import Rect
 
 """
 イベントの開始・継続・キャンセル状態フラグ
@@ -26,6 +27,8 @@ class Postudes(Enum):
     GrepLadder = 4
     """梯子這い上がり"""
     CrawLing = 5
+    """のけぞり"""
+    BendBack = 6
 
 """Posutudesと同時に混在させられる姿勢"""
 class AdditionalPostudes(Enum):
@@ -38,18 +41,45 @@ class AdditionalPostudes(Enum):
     """投げ"""
     Throw = 3
 
-class StateEvents(Enum):
+"""周りから受けたことによるプレイヤーのリアクション状態"""
+class ReactionStateEvents(Enum):
     """着地"""
     Land = 0
     """空中"""
     InAir = 1
     """梯子掴み"""
     GrepLadder = 2
+    """被弾"""
+    Hit = 3
 
-class PrintStates(Enum):
+"""プレイヤーの表示効果"""
+class PrintEffects(Enum):
     """何もなし"""
     Neutral = 0
     """被弾"""
     Hit = 1
     """点滅"""
     Blink = 2
+
+"""動作時の検証フラグ"""
+class MoveStates(Enum):
+    """進路障害なし"""
+    Neutral = 0
+    """進路に衝突する障害物あり"""
+    Collided = 1
+
+"""プレイヤー移動時に衝突するオブジェクト有無の検証クラス（x, y軸の各軸に分けて検証することを想定）"""
+class MoveVerify:
+    def __init__(self) -> None:
+        self.PredictObject:Rect
+        self.State:MoveStates
+
+    def Verify(self, playerBox:Rect, terrainObjects:list[Rect]) -> None:
+        self.PredictObject = next(
+            (_ for _ in terrainObjects if playerBox.colliderect(_))
+            , None)
+        if self.PredictObject is None:
+            self.State = MoveStates.Neutral
+            return
+        
+        self.State = MoveStates.Collided
