@@ -71,41 +71,53 @@ class AxisDirection(Enum):
 
 class VerifierContext:
     def __init__(self) -> None:
-        self.YAxis
-        self._XVerifier
-        self._YVerifier
+        self._YVerifier = YAxisVerifier()
+        self._XVerifier = XAxisVerifier()
+        self.State = self._YVerifier.State
 
-    @XVerifier.setter
-    def XVerifier(self, xAxisVerifier:XAxisVerifier):
-        self._XVerifier = xAxisVerifier
+    def updateYVerifier(self, vy, playerRect, state, terrRects):
+        self._YVerifier.Delta = vy
+        self._YVerifier.PlayerRect = playerRect
+        self._YVerifier.State = state
+        self._YVerifier.TerrRects = terrRects
 
-    @YVerifier.setter
-    def YVerifier(self, yAxisVerifier:YAxisVerifier):
-        self._YVerifier = yAxisVerifier
+    def UpdateXVerifier(self, vx, playerRect, state, terrRects):
+        self._XVerifier.Delta = vx
+        self._XVerifier.PlayerRect = playerRect
+        self._XVerifier.State = state
+        self._XVerifier.TerrRects = terrRects
+    
+    def YVerify(self) -> None:
+        if self._YVerifier.Obj is not None:
+            if self._YVerifier.Direction == AxisDirection.Positive:
+                self._YVerifier.PlayerRect.bottom = self._YVerifier.Obj.top + 1
+                self.State = ReactionStateEvents.Land
+            elif self._YVerifier.Direction == AxisDirection.Negative:
+                self._YVerifier.PlayerRect.top = self._YVerifier.Obj.bottom
+                """空中 or ハシゴ"""
+        else:
+            if self.State == ReactionStateEvents.InAir or self.State == ReactionStateEvents.GrepLadder:
+                """空中 or ハシゴ"""
+                self._YVerifier.PlayerRect.y = self._YVerifier.Delta
+            else:
+                return
 
-    def XVerify(self):
+    def XVerify(self) -> None:
+        if self._XVerifier.State == ReactionStateEvents.GrepLadder:
+            return
         if self._XVerifier.Obj is not None:
             if self._XVerifier.Direction == AxisDirection.Positive:
                 self._XVerifier.PlayerRect.right = self._XVerifier.Obj.left
             elif self._XVerifier.Direction == AxisDirection.Negative:
                 self._XVerifier.PlayerRect.left = self._XVerifier.Obj.right
         else:
-            self._XVerifier.PlayerRect.x = self._XVerifier.Delta
-    
-    def YVerify(self):
-        if self._YVerifier.Obj is not None:
-            if self._YVerifier.Direction == AxisDirection.Positive:
-                self._YVerifier.PlayerRect.bottom = self._YVerifier.Obj.top + 1
-                """着地"""
-            elif self._YVerifier.Direction == AxisDirection.Negative:
-                self._YVerifier.PlayerRect.top = self._YVerifier.Obj.bottom
-                """空中"""
-        else:
-            if self._YVerifier.Delta == 0:
-                """着地"""
+            if self._XVerifier.State == ReactionStateEvents.Hit:
+                if self._XVerifier.Direction == AxisDirection.Positive:
+                    self._XVerifier.PlayerRect.x -= 1
+                elif self._XVerifier.Direction == AxisDirection.Negative:
+                    self._XVerifier.PlayerRect.x += 1
             else:
-                """空中"""
-            self._YVerifier.PlayerRect.y = self._YVerifier.Delta
+                self._XVerifier.PlayerRect.x = self._XVerifier.Delta
 
 """プレイヤーの1軸の進行方向から衝突検証を行うロジッククラス"""
 class OneAxisVerifier:
@@ -113,24 +125,9 @@ class OneAxisVerifier:
         self.Delta:int
         self.PlayerRect:Rect
         self._TerrRects:Rect
-        self._State:ReactionStateEvents = ReactionStateEvents.InAir
+        self.State:ReactionStateEvents = ReactionStateEvents.InAir
         self.Direction:AxisDirection = AxisDirection.Positive
         self.Obj:Rect
-
-    """プレイヤー進行距離のsetter"""
-    @Delta.setter
-    def Delta(self, delta:int):
-        self.Delta = delta
-    
-    """プレイヤーのヒットボックスsetter"""
-    @PlayerRect.setter
-    def PlayerRect(self, playerRect:Rect):
-        self.PlayerRect = playerRect
-
-    """プレイヤーの状態setter"""
-    @State.setter
-    def State(self, states:ReactionStateEvents):
-        self._State = states
 
     """画面上地形オブジェクトのsetter"""
     @TerrRects.setter
@@ -159,7 +156,7 @@ class OneAxisVerifier:
 """プレイヤーのY軸進行方向から衝突検証を行うロジッククラス"""
 class YAxisVerifier(OneAxisVerifier):
     def __PositiveFunc(self, playerRect: Rect, terrObj: Rect) -> bool:
-        if self._State == ReactionStateEvents.Land:
+        if self.State == ReactionStateEvents.Land:
             return False
         else:
             return Funcset.IsBottomFillter(playerRect, terrObj)
@@ -170,13 +167,13 @@ class YAxisVerifier(OneAxisVerifier):
 """プレイヤーのX軸進行方向から衝突検証を行うロジッククラス"""
 class XAxisVerifier(OneAxisVerifier):
     def __PositiveFunc(self, playerRect: Rect, terrObj: Rect) -> bool:
-        if self._State == ReactionStateEvents.Land:
+        if self.State == ReactionStateEvents.Land:
             return Funcset.IsRightFillter(playerRect, terrObj) and Funcset.IsLandAdditionalFillter(playerRect, terrObj)
         else :
             return Funcset.IsRightFillter(playerRect, terrObj)
     
     def __NegativeFunc(self, playerRect: Rect, terrObj: Rect) -> bool:
-        if self._State == ReactionStateEvents.Land:
+        if self.State == ReactionStateEvents.Land:
             return Funcset.IsLeftFillter(playerRect, terrObj) and Funcset.IsLandAdditionalFillter(playerRect, terrObj)
         else :
             return Funcset.IsLeftFillter(playerRect, terrObj)
