@@ -69,11 +69,49 @@ class AxisDirection(Enum):
     """正"""
     Positive = 1
 
+class VerifierContext:
+    def __init__(self) -> None:
+        self.YAxis
+        self._XVerifier
+        self._YVerifier
+
+    @XVerifier.setter
+    def XVerifier(self, xAxisVerifier:XAxisVerifier):
+        self._XVerifier = xAxisVerifier
+
+    @YVerifier.setter
+    def YVerifier(self, yAxisVerifier:YAxisVerifier):
+        self._YVerifier = yAxisVerifier
+
+    def XVerify(self):
+        if self._XVerifier.Obj is not None:
+            if self._XVerifier.Direction == AxisDirection.Positive:
+                self._XVerifier.PlayerRect.right = self._XVerifier.Obj.left
+            elif self._XVerifier.Direction == AxisDirection.Negative:
+                self._XVerifier.PlayerRect.left = self._XVerifier.Obj.right
+        else:
+            self._XVerifier.PlayerRect.x = self._XVerifier.Delta
+    
+    def YVerify(self):
+        if self._YVerifier.Obj is not None:
+            if self._YVerifier.Direction == AxisDirection.Positive:
+                self._YVerifier.PlayerRect.bottom = self._YVerifier.Obj.top + 1
+                """着地"""
+            elif self._YVerifier.Direction == AxisDirection.Negative:
+                self._YVerifier.PlayerRect.top = self._YVerifier.Obj.bottom
+                """空中"""
+        else:
+            if self._YVerifier.Delta == 0:
+                """着地"""
+            else:
+                """空中"""
+            self._YVerifier.PlayerRect.y = self._YVerifier.Delta
+
 """プレイヤーの1軸の進行方向から衝突検証を行うロジッククラス"""
 class OneAxisVerifier:
     def __init__(self) -> None:
-        self._Delta:int
-        self._PlayerRect:Rect
+        self.Delta:int
+        self.PlayerRect:Rect
         self._TerrRects:Rect
         self._State:ReactionStateEvents = ReactionStateEvents.InAir
         self.Direction:AxisDirection = AxisDirection.Positive
@@ -82,13 +120,13 @@ class OneAxisVerifier:
     """プレイヤー進行距離のsetter"""
     @Delta.setter
     def Delta(self, delta:int):
-        self._Delta = delta
+        self.Delta = delta
     
     """プレイヤーのヒットボックスsetter"""
     @PlayerRect.setter
     def PlayerRect(self, playerRect:Rect):
-        self._PlayerRect = playerRect
-    
+        self.PlayerRect = playerRect
+
     """プレイヤーの状態setter"""
     @State.setter
     def State(self, states:ReactionStateEvents):
@@ -101,14 +139,14 @@ class OneAxisVerifier:
     
     """各setterで取得した値・オブジェクトから、進行方向および衝突オブジェクト（None許容）の取得を行う"""
     def Verify(self):
-        if self._Delta >= 0:
+        if self.Delta >= 0:
             self.Direction = AxisDirection.Positive
             fnc = self.__PositiveFunc
         else:
             self.Direction = AxisDirection.Negative
             fnc = self.__NegativeFunc
-        filtered = (_ for _ in self._TerrRects if fnc(self._PlayerRect, _))
-        self.Obj = Funcset.TestGetColidedObject(self._PlayerRect, filtered)
+        filtered = (_ for _ in self._TerrRects if fnc(self.PlayerRect, _))
+        self.Obj = Funcset.TestGetColidedObject(self.PlayerRect, filtered)
 
     """self.Directionが正の場合の衝突判定対象関数"""
     def __PositiveFunc(self, playerRect:Rect, terrObj:Rect) -> bool:
@@ -121,7 +159,10 @@ class OneAxisVerifier:
 """プレイヤーのY軸進行方向から衝突検証を行うロジッククラス"""
 class YAxisVerifier(OneAxisVerifier):
     def __PositiveFunc(self, playerRect: Rect, terrObj: Rect) -> bool:
-        return Funcset.IsBottomFillter(playerRect, terrObj)
+        if self._State == ReactionStateEvents.Land:
+            return False
+        else:
+            return Funcset.IsBottomFillter(playerRect, terrObj)
     
     def __NegativeFunc(self, playerRect: Rect, terrObj: Rect) -> bool:
         return Funcset.IsUpperFillter(playerRect, terrObj)
