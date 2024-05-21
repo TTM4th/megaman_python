@@ -1,6 +1,7 @@
 from __future__ import annotations
 from enum import Enum
 from pygame import Rect
+from collections.abc import Iterator
 
 """
 イベントの開始・継続・キャンセル状態フラグ
@@ -61,25 +62,110 @@ class PrintEffects(Enum):
     """点滅"""
     Blink = 2
 
-"""動作時の検証フラグ"""
-class MoveStates(Enum):
-    """進路障害なし"""
-    Neutral = 0
-    """進路に衝突する障害物あり"""
-    Collided = 1
+"""1軸の進行方向"""
+class AxisDirection(Enum):
+    """負"""
+    Negative = -1
+    """正"""
+    Positive = 1
 
-"""プレイヤー移動時に衝突するオブジェクト有無の検証クラス（x, y軸の各軸に分けて検証することを想定）"""
-class MoveVerify:
+"""プレイヤーの1軸の進行方向から衝突検証を行うロジッククラス"""
+class OneAxisVerifier:
     def __init__(self) -> None:
-        self.PredictObject:Rect
-        self.State:MoveStates
+        self._Delta:int
+        self._PlayerRect:Rect
+        self._TerrRects:Rect
+        self._State:ReactionStateEvents = ReactionStateEvents.InAir
+        self.Direction:AxisDirection = AxisDirection.Positive
+        self.Obj:Rect
 
-    def Verify(self, playerBox:Rect, terrainObjects:list[Rect]) -> None:
-        self.PredictObject = next(
-            (_ for _ in terrainObjects if playerBox.colliderect(_))
-            , None)
-        if self.PredictObject is None:
-            self.State = MoveStates.Neutral
-            return
+    """プレイヤー進行距離のsetter"""
+    @Delta.setter
+    def Delta(self, delta:int):
+        self._Delta = delta
+    
+    """プレイヤーのヒットボックスsetter"""
+    @PlayerRect.setter
+    def PlayerRect(self, playerRect:Rect):
+        self._PlayerRect = playerRect
+    
+    """プレイヤーの状態setter"""
+    @State.setter
+    def State(self, states:ReactionStateEvents):
+        self._State = states
+
+    """画面上地形オブジェクトのsetter"""
+    @TerrRects.setter
+    def TerrRects(self, terrRects:Iterator[Rect]):
+        self._TerrRects = terrRects
+    
+    """各setterで取得した値・オブジェクトから、進行方向および衝突オブジェクト（None許容）の取得を行う"""
+    def Verify(self):
+        if self._Delta >= 0:
+            self.Direction = AxisDirection.Positive
+            fnc = self.__PositiveFunc
+        else:
+            self.Direction = AxisDirection.Negative
+            fnc = self.__NegativeFunc
+        filtered = (_ for _ in self._TerrRects if fnc(self._PlayerRect, _))
+        self.Obj = Funcset.TestGetColidedObject(self._PlayerRect, filtered)
+
+    """self.Directionが正の場合の衝突判定対象関数"""
+    def __PositiveFunc(self, playerRect:Rect, terrObj:Rect) -> bool:
+        return False
+    
+    """self.Directionが負の場合の衝突判定対象関数"""
+    def __NegativeFunc(self, playerRect:Rect, terrObj:Rect) -> bool:
+        return False
+
+"""プレイヤーのY軸進行方向から衝突検証を行うロジッククラス"""
+class YAxisVerifier(OneAxisVerifier):
+    def __PositiveFunc(self, playerRect: Rect, terrObj: Rect) -> bool:
+        return Funcset.IsBottomFillter(playerRect, terrObj)
+    
+    def __NegativeFunc(self, playerRect: Rect, terrObj: Rect) -> bool:
+        return Funcset.IsUpperFillter(playerRect, terrObj)
+
+"""プレイヤーのX軸進行方向から衝突検証を行うロジッククラス"""
+class XAxisVerifier(OneAxisVerifier):
+    def __PositiveFunc(self, playerRect: Rect, terrObj: Rect) -> bool:
+        if self._State == ReactionStateEvents.Land:
+            return Funcset.IsRightFillter(playerRect, terrObj) and Funcset.IsLandAdditionalFillter(playerRect, terrObj)
+        else :
+            return Funcset.IsRightFillter(playerRect, terrObj)
+    
+    def __NegativeFunc(self, playerRect: Rect, terrObj: Rect) -> bool:
+        if self._State == ReactionStateEvents.Land:
+            return Funcset.IsLeftFillter(playerRect, terrObj) and Funcset.IsLandAdditionalFillter(playerRect, terrObj)
+        else :
+            return Funcset.IsLeftFillter(playerRect, terrObj)
         
-        self.State = MoveStates.Collided
+class Funcset:
+
+    @staticmethod
+    def IsBottomFillter(playerRect:Rect, terrObj:Rect) -> bool:
+        return terrObj.top < playerRect.bottom and playerRect.bottom < terrObj.bottom
+
+    @staticmethod
+    def IsUpperFillter(playerRect:Rect, terrObj:Rect) -> bool:
+        return terrObj.bottom > playerRect.top and playerRect.top > terrObj.top
+    
+    @staticmethod
+    def IsRightFillter(playerRect:Rect, terrObj:Rect) -> bool:
+        return terrObj.left < playerRect.right and playerRect.right < terrObj.left
+    
+    @staticmethod
+    def IsLeftFillter(playerRect:Rect, terrObj:Rect) -> bool:
+        return terrObj.right > playerRect.left and playerRect.left > terrObj.left
+
+    """playerがLandの場合にfilter処理で追加する条件関数"""
+    @staticmethod
+    def IsLandAdditionalFillter(playerRect:Rect, terrObj:Rect) -> bool:
+        return playerRect.bottom > terrObj.bottom > playerRect.top
+    
+    """第1引数で渡したプレイヤーBoxが"""
+    """第2引数で渡したオブジェクトに接触したオブジェクトが存在するか試しにとる"""
+    """存在しない場合はNoneを返す"""
+    @staticmethod
+    def TestGetColidedObject(playerRect:Rect, fillteredObjs:Iterator[Rect]):
+        return next((_ for _ in fillteredObjs if playerRect.colliderect(_)), None)
