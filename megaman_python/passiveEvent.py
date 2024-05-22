@@ -75,49 +75,23 @@ class VerifierContext:
         self._XVerifier = XAxisVerifier()
         self.State = self._YVerifier.State
 
-    def updateYVerifier(self, vy, playerRect, state, terrRects):
+    def RefleshVerifier(self, vx, vy, playerRect, state, terrRects):
         self._YVerifier.Delta = vy
-        self._YVerifier.PlayerRect = playerRect
-        self._YVerifier.State = state
-        self._YVerifier.TerrRects = terrRects
-
-    def UpdateXVerifier(self, vx, playerRect, state, terrRects):
         self._XVerifier.Delta = vx
+        self._YVerifier.PlayerRect = playerRect
         self._XVerifier.PlayerRect = playerRect
+        self._YVerifier.State = state
         self._XVerifier.State = state
+        self._YVerifier.TerrRects = terrRects
         self._XVerifier.TerrRects = terrRects
     
-    def YVerify(self) -> None:
-        if self._YVerifier.Obj is not None:
-            if self._YVerifier.Direction == AxisDirection.Positive:
-                self._YVerifier.PlayerRect.bottom = self._YVerifier.Obj.top + 1
-                self.State = ReactionStateEvents.Land
-            elif self._YVerifier.Direction == AxisDirection.Negative:
-                self._YVerifier.PlayerRect.top = self._YVerifier.Obj.bottom
-                """空中 or ハシゴ"""
-        else:
-            if self.State == ReactionStateEvents.InAir or self.State == ReactionStateEvents.GrepLadder:
-                """空中 or ハシゴ"""
-                self._YVerifier.PlayerRect.y = self._YVerifier.Delta
-            else:
-                return
+    def Verify(self) -> None:
+        self._YVerifier.Verify()
+        self._XVerifier.Verify()
 
-    def XVerify(self) -> None:
-        if self._XVerifier.State == ReactionStateEvents.GrepLadder:
-            return
-        if self._XVerifier.Obj is not None:
-            if self._XVerifier.Direction == AxisDirection.Positive:
-                self._XVerifier.PlayerRect.right = self._XVerifier.Obj.left
-            elif self._XVerifier.Direction == AxisDirection.Negative:
-                self._XVerifier.PlayerRect.left = self._XVerifier.Obj.right
-        else:
-            if self._XVerifier.State == ReactionStateEvents.Hit:
-                if self._XVerifier.Direction == AxisDirection.Positive:
-                    self._XVerifier.PlayerRect.x -= 1
-                elif self._XVerifier.Direction == AxisDirection.Negative:
-                    self._XVerifier.PlayerRect.x += 1
-            else:
-                self._XVerifier.PlayerRect.x = self._XVerifier.Delta
+    def Drive(self, playerRect:Rect):
+        self._YVerifier.DriveY(playerRect)
+        self._XVerifier.DriveX(playerRect)
 
 """プレイヤーの1軸の進行方向から衝突検証を行うロジッククラス"""
 class OneAxisVerifier:
@@ -164,6 +138,21 @@ class YAxisVerifier(OneAxisVerifier):
     def __NegativeFunc(self, playerRect: Rect, terrObj: Rect) -> bool:
         return Funcset.IsUpperFillter(playerRect, terrObj)
 
+    def DriveY(self, playerRect:Rect):
+        if self.Obj is not None:
+            if self.Direction == AxisDirection.Positive:
+                playerRect.bottom = self.Obj.top + 1
+                self.State = ReactionStateEvents.Land
+            elif self.Direction == AxisDirection.Negative:
+                """空中 or ハシゴ"""
+                playerRect.top = self.Obj.bottom
+        else:
+            if self.State == ReactionStateEvents.InAir or self.State == ReactionStateEvents.GrepLadder:
+                """空中 or ハシゴ"""
+                playerRect.y = self.Delta
+            else:
+                return
+
 """プレイヤーのX軸進行方向から衝突検証を行うロジッククラス"""
 class XAxisVerifier(OneAxisVerifier):
     def __PositiveFunc(self, playerRect: Rect, terrObj: Rect) -> bool:
@@ -177,7 +166,21 @@ class XAxisVerifier(OneAxisVerifier):
             return Funcset.IsLeftFillter(playerRect, terrObj) and Funcset.IsLandAdditionalFillter(playerRect, terrObj)
         else :
             return Funcset.IsLeftFillter(playerRect, terrObj)
-        
+    
+    def DriveX(self, playerRect:Rect):
+        if self.State == ReactionStateEvents.GrepLadder:
+            return
+        if self._XVerifier.Obj is not None:
+            if self._XVerifier.Direction == AxisDirection.Positive:
+                playerRect.right = self.Obj.left
+            elif self._XVerifier.Direction == AxisDirection.Negative:
+                playerRect.left = self.Obj.right
+        else:
+            if self.State == ReactionStateEvents.Hit:
+                playerRect.x += -self.Direction
+            else:
+                self._XVerifier.PlayerRect.x = self._XVerifier.Delta
+
 class Funcset:
 
     @staticmethod
