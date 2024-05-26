@@ -43,7 +43,7 @@ class AdditionalPostudes(Enum):
     Throw = 3
 
 """周りから受けたことによるプレイヤーのリアクション状態"""
-class ReactionStateEvents(Enum):
+class ReactionState(Enum):
     """着地"""
     Land = 0
     """空中"""
@@ -71,11 +71,11 @@ class AxisDirection(Enum):
 
 class ObjectStates:
     def __init__(self) -> None:
-        self.State:ReactionStateEvents
+        self.ReactionState:ReactionState
         self.Rect:Rect
 
-    def CatchValue(self, state:ReactionStateEvents, rect:Rect):
-        self.State = state
+    def CatchValue(self, reactionState:ReactionState, rect:Rect):
+        self.ReactionState = reactionState
         self.Rect = rect
 
 class VerifierContext:
@@ -110,15 +110,15 @@ class OneAxisVerifier:
             self._Direction = AxisDirection.Negative
             fnc = self._NegativeFunc
         pred = self._PredicateRectLocation(objstates.Rect, delta)
-        filtered = [_ for _ in terrRects if fnc(objstates.State, pred, _)]
+        filtered = [_ for _ in terrRects if fnc(objstates.ReactionState, pred, _)]
         self.Obj = Funcset.TestGetColidedObject(pred, filtered)
 
-    """self.Directionが正の場合の衝突判定対象関数"""
-    def _PositiveFunc(self, status:ObjectStates , rect:Rect, terrObj:Rect) -> bool:
+    """self._Directionが正の場合の衝突判定対象関数"""
+    def _PositiveFunc(self, reactionStatus:ReactionState , rect:Rect, terrObj:Rect) -> bool:
         pass
     
-    """self.Directionが負の場合の衝突判定対象関数"""
-    def _NegativeFunc(self, status:ObjectStates, rect:Rect, terrObj:Rect) -> bool:
+    """self._Directionが負の場合の衝突判定対象関数"""
+    def _NegativeFunc(self, reactionStatus:ReactionState, rect:Rect, terrObj:Rect) -> bool:
         pass
     
     """第2引数で渡した移動値に移動したRectを返す"""
@@ -131,13 +131,13 @@ class OneAxisVerifier:
 
 """プレイヤーのY軸進行方向から衝突検証を行うロジッククラス"""
 class YAxisVerifier(OneAxisVerifier):
-    def _PositiveFunc(self, status:ObjectStates, rect:Rect, terrObj: Rect) -> bool:
-        if status == ReactionStateEvents.Land:
+    def _PositiveFunc(self, reactionStatus:ReactionState, rect:Rect, terrObj: Rect) -> bool:
+        if reactionStatus == ReactionState.Land:
             return False
         else:
             return Funcset.IsBottomFillter(rect, terrObj)
     
-    def _NegativeFunc(self, status:ObjectStates , rect:Rect, terrObj: Rect) -> bool:
+    def _NegativeFunc(self, reactionStatus:ReactionState , rect:Rect, terrObj: Rect) -> bool:
         return Funcset.IsUpperFillter(rect, terrObj)
 
     def _PredicateRectLocation(self, orgRect: Rect, delta: int) -> Rect:
@@ -147,12 +147,12 @@ class YAxisVerifier(OneAxisVerifier):
         if self.Obj is not None:
             if self._Direction == AxisDirection.Positive:
                 objstates.Rect.bottom = self.Obj.top + 1
-                objstates.State = ReactionStateEvents.Land
+                objstates.ReactionState = ReactionState.Land
             elif self._Direction == AxisDirection.Negative:
                 """空中 or ハシゴ"""
                 objstates.Rect.top = self.Obj.bottom
         else:
-            if objstates.State == ReactionStateEvents.InAir or objstates.State == ReactionStateEvents.GrepLadder:
+            if objstates.ReactionState == ReactionState.InAir or objstates.ReactionState == ReactionState.GrepLadder:
                 """空中 or ハシゴ"""
                 objstates.Rect.y += delta
             else:
@@ -160,14 +160,14 @@ class YAxisVerifier(OneAxisVerifier):
 
 """プレイヤーのX軸進行方向から衝突検証を行うロジッククラス"""
 class XAxisVerifier(OneAxisVerifier):
-    def _PositiveFunc(self, status:ObjectStates, rect:Rect, terrObj: Rect) -> bool:
-        if status == ReactionStateEvents.Land:
+    def _PositiveFunc(self, reactionStatus:ReactionState, rect:Rect, terrObj: Rect) -> bool:
+        if reactionStatus == ReactionState.Land:
             return Funcset.IsRightFillter(rect, terrObj) and Funcset.IsLandAdditionalFillter(rect, terrObj)
         else :
             return Funcset.IsRightFillter(rect, terrObj)
     
-    def _NegativeFunc(self, status:ObjectStates, rect:Rect, terrObj: Rect) -> bool:
-        if status == ReactionStateEvents.Land:
+    def _NegativeFunc(self, reactionStatus:ReactionState, rect:Rect, terrObj: Rect) -> bool:
+        if reactionStatus == ReactionState.Land:
             return Funcset.IsLeftFillter(rect, terrObj) and Funcset.IsLandAdditionalFillter(rect, terrObj)
         else :
             return Funcset.IsLeftFillter(rect, terrObj)
@@ -176,7 +176,7 @@ class XAxisVerifier(OneAxisVerifier):
         return orgRect.move(delta, 0)
 
     def Drive(self, objstates:ObjectStates, delta:int):
-        if objstates.State == ReactionStateEvents.GrepLadder:
+        if objstates.ReactionState == ReactionState.GrepLadder:
             return
         if self.Obj is not None:
             if self._Direction == AxisDirection.Positive:
@@ -184,7 +184,7 @@ class XAxisVerifier(OneAxisVerifier):
             elif self._Direction == AxisDirection.Negative:
                 objstates.Rect.left = self.Obj.right
         else:
-            if self._Direction == ReactionStateEvents.Hit:
+            if objstates.ReactionState == ReactionState.Hit:
                 objstates.Rect.x += -self._Direction
             else:
                 objstates.Rect.x += delta
