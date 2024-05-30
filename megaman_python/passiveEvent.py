@@ -110,7 +110,7 @@ class OneAxisVerifier:
             self._Direction = AxisDirection.Negative
             fnc = self._NegativeFunc
         pred = self._PredicateRectLocation(objstates.Rect, delta)
-        filtered = [_ for _ in terrRects if fnc(objstates.ReactionState, pred, _)]
+        filtered = (_ for _ in terrRects if fnc(objstates.ReactionState, pred, _))
         self.Obj = Funcset.TestGetColidedObject(pred, filtered)
 
     """self._Directionが正の場合の衝突判定対象関数"""
@@ -151,11 +151,13 @@ class YAxisVerifier(OneAxisVerifier):
             elif self._Direction == AxisDirection.Negative:
                 """空中 or ハシゴ"""
                 objstates.Rect.top = self.Obj.bottom
+            self.Obj = None
         else:
             if objstates.ReactionState == ReactionState.InAir or objstates.ReactionState == ReactionState.GrepLadder:
                 """空中 or ハシゴ"""
                 objstates.Rect.y += delta
             else:
+                """地上・梯子這い上がり"""
                 return
 
 """プレイヤーのX軸進行方向から衝突検証を行うロジッククラス"""
@@ -183,6 +185,7 @@ class XAxisVerifier(OneAxisVerifier):
                 objstates.Rect.right = self.Obj.left
             elif self._Direction == AxisDirection.Negative:
                 objstates.Rect.left = self.Obj.right
+            self.Obj = None
         else:
             if objstates.ReactionState == ReactionState.Hit:
                 objstates.Rect.x += -self._Direction
