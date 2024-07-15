@@ -95,9 +95,9 @@ class ApplyContext:
     def ApplyMotion(self, player:PlayerStates, deltaX:int, deltaY:int, terrRects:Iterable[Rect]):
         self._XApplier.ApplyMove(player, deltaX, terrRects)
         self._YApplier.ApplyMove(player, deltaY, terrRects)
-        if self._YApplier.ColideState == CollideState.IsCollidePositive:
+        if self._YApplier.CollideState == CollideState.IsCollidePositive:
             player.ReactionState = ReactionState.Land
-        elif self._YApplier.ColideState == CollideState.NoCollide:
+        elif self._YApplier.CollideState == CollideState.NoCollide and player.ReactionState == ReactionState.Land:
             player.ReactionState = ReactionState.InAir
             #player.Postude = Postudes.InAir
 
@@ -105,14 +105,19 @@ class ApplyContext:
 class OneAxisApplier:
     def __init__(self) -> None:
         self.Verifier:OneAxisVerifier
-        self.ColideState:CollideState
+        self.CollideState:CollideState = CollideState.NoCollide
 
     """引数で渡したPlayerStates、移動距離、画面表示されているオブジェクトのRectから接触状況に応じた単軸の移動結果を、PlayerStatesに反映させる"""
     def ApplyMove(self, player:PlayerStates, delta:int, terrRects:Iterable[Rect]):
         collideObj = self.Verifier.GetFirstCollideObject(player, delta, terrRects)
         if collideObj is None:
+            self.CollideState = CollideState.NoCollide
             self._NoCollideMove(player, delta)
         else:
+            if delta >= 0:
+                self.CollideState = CollideState.IsCollidePositive
+            else:
+                self.CollideState = CollideState.IsCollideNegative
             self._IsCollideMove(player, delta, collideObj)
 
     """接触オブジェクトがない場合の移動"""
@@ -134,22 +139,15 @@ class YAxisApplier(OneAxisApplier):
     
     """接触オブジェクトがない場合の移動（「接触：なし」として記録する）"""
     def _NoCollideMove(self, player: PlayerStates, delta: int):
-        self.ColideState = CollideState.NoCollide
-        if player.ReactionState == ReactionState.InAir or player.ReactionState == ReactionState.GrepLadder:
-            """空中 or ハシゴ"""
-            player.Rect.y += delta
-        else:
-            """地上・梯子這い上がり"""
-            return
+        """空中 or ハシゴ"""
+        player.Rect.y += delta
         
     """接触オブジェクトがある場合の移動（負の方向なら「接触：負の方向あり」、正の方向なら「接触：正の方向あり」として記録する）"""
     def _IsCollideMove(self, player: PlayerStates, delta: int, terrObj: Rect):
-        if delta >= 0:
-            self.ColideState = CollideState.IsCollidePositive
+        if delta > 0:
             player.Rect.bottom = terrObj.top + 1
         elif delta < 0:
             """空中 or ハシゴ"""
-            self.ColideState = CollideState.IsCollideNegative
             player.Rect.top = terrObj.bottom
         else:
             return
@@ -161,23 +159,17 @@ class XAxisApplier(OneAxisApplier):
     
     """引数で渡したPlayerStates、移動距離、画面表示されているオブジェクトのRectから接触状況に応じたX軸の移動結果を、PlayerStatesに反映させる"""
     def ApplyMove(self, player: PlayerStates, delta: int, terrRects: Iterable[Rect]):
-        if player.ReactionState == ReactionState.GrepLadder :
-            self.ColideState = CollideState.NoCollide
-            return
         super().ApplyMove(player, delta, terrRects)
     
     """接触オブジェクトがない場合の移動（「接触：なし」として記録する）"""
     def _NoCollideMove(self, player: PlayerStates, delta: int):
-        self.ColideState = CollideState.NoCollide
         player.Rect.x += delta
 
     """接触オブジェクトがある場合の移動（負の方向なら「接触：負の方向あり」、正の方向なら「接触：正の方向あり」として記録する）"""
     def _IsCollideMove(self, player: PlayerStates, delta:int, terrObj: Rect):
         if delta > 0:
-            self.ColideState = CollideState.IsCollidePositive
             player.Rect.right = terrObj.left
         elif delta < 0:
-            self.ColideState = CollideState.IsCollideNegative
             player.Rect.left = terrObj.right
         else:
             return
