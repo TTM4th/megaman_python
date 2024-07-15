@@ -71,8 +71,11 @@ class AxisDirection(Enum):
 
 """衝突有無"""
 class CollideState(Enum):
+    """接触無"""
     NoCollide = 0
+    """正方向に接触"""
     IsCollidePositive = 1
+    """負方向に接触"""
     IsCollideNegative = 2
 
 """Playerの状態を一元管理するクラス"""    
@@ -96,7 +99,7 @@ class ApplyContext:
             player.ReactionState = ReactionState.Land
         elif self._YApplier.ColideState == CollideState.NoCollide:
             player.ReactionState = ReactionState.InAir
-            player.Postude = Postudes.InAir
+            #player.Postude = Postudes.InAir
 
 """単軸の動きをPlayerStatesに反映させるためのロジッククラス"""
 class OneAxisApplier:
@@ -141,10 +144,9 @@ class YAxisApplier(OneAxisApplier):
         
     """接触オブジェクトがある場合の移動（負の方向なら「接触：負の方向あり」、正の方向なら「接触：正の方向あり」として記録する）"""
     def _IsCollideMove(self, player: PlayerStates, delta: int, terrObj: Rect):
-        if delta > 0:
+        if delta >= 0:
             self.ColideState = CollideState.IsCollidePositive
             player.Rect.bottom = terrObj.top + 1
-            #player.ReactionState = ReactionState.Land
         elif delta < 0:
             """空中 or ハシゴ"""
             self.ColideState = CollideState.IsCollideNegative
@@ -159,13 +161,13 @@ class XAxisApplier(OneAxisApplier):
     
     """引数で渡したPlayerStates、移動距離、画面表示されているオブジェクトのRectから接触状況に応じたX軸の移動結果を、PlayerStatesに反映させる"""
     def ApplyMove(self, player: PlayerStates, delta: int, terrRects: Iterable[Rect]):
-        if player.ReactionState == ReactionState.GrepLadder:return
+        if player.ReactionState == ReactionState.GrepLadder :
+            self.ColideState = CollideState.NoCollide
+            return
         super().ApplyMove(player, delta, terrRects)
     
     """接触オブジェクトがない場合の移動（「接触：なし」として記録する）"""
     def _NoCollideMove(self, player: PlayerStates, delta: int):
-        #if player.ReactionState == ReactionState.Hit:
-        #    player.Rect.x += -self._Direction
         self.ColideState = CollideState.NoCollide
         player.Rect.x += delta
 
@@ -207,10 +209,7 @@ class OneAxisVerifier:
 class YAxisVerifier(OneAxisVerifier):
 
     def _PositiveFunc(self, reactionStatus:ReactionState, rect:Rect, terrObj: Rect) -> bool:
-        if reactionStatus == ReactionState.Land:
-            return False
-        else:
-            return Funcset.IsBottomFillter(rect, terrObj)
+        return Funcset.IsBottomFillter(rect, terrObj)
     
     def _NegativeFunc(self, reactionStatus:ReactionState , rect:Rect, terrObj: Rect) -> bool:
         return Funcset.IsUpperFillter(rect, terrObj)
@@ -220,6 +219,7 @@ class YAxisVerifier(OneAxisVerifier):
 
 """プレイヤーのX軸進行方向から衝突検証を行うロジッククラス"""
 class XAxisVerifier(OneAxisVerifier):
+
     def _PositiveFunc(self, reactionStatus:ReactionState, rect:Rect, terrObj: Rect) -> bool:
         if reactionStatus == ReactionState.Land:
             return Funcset.IsRightFillter(rect, terrObj) and Funcset.IsLandAdditionalFillter(rect, terrObj)
@@ -261,7 +261,7 @@ class Funcset:
     """playerがLandの場合にfilter処理で追加する条件関数"""
     @staticmethod
     def IsLandAdditionalFillter(playerRect:Rect, terrObj:Rect) -> bool:
-        """オブジェクトの底がプレイヤーの頭から足の間にあれば、設置時のX軸接触オブジェクト検知の対象とする"""
+        """オブジェクトの底がプレイヤーの頭から足の間にあれば、接地時のX軸接触オブジェクト検知の対象とする"""
         return terrObj.bottom > playerRect.top and playerRect.bottom > terrObj.bottom
     
     """第1引数で渡したプレイヤーBoxが"""
