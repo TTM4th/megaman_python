@@ -105,6 +105,7 @@ class ApplyContext:
 class OneAxisApplier:
     def __init__(self) -> None:
         self.Verifier:OneAxisVerifier
+        """接触状態：取り扱いについては可読性を考慮して、値更新は当クラス内に収める（C#で言うPrivate setにする）"""
         self.CollideState:CollideState = CollideState.NoCollide
 
     """引数で渡したPlayerStates、移動距離、画面表示されているオブジェクトのRectから接触状況に応じた単軸の移動結果を、PlayerStatesに反映させる"""
@@ -132,10 +133,6 @@ class OneAxisApplier:
 class YAxisApplier(OneAxisApplier):
     def __init__(self) -> None:
         self.Verifier = YAxisVerifier()
-
-    """引数で渡したPlayerStates、移動距離、画面表示されているオブジェクトのRectから接触状況に応じたY軸の移動結果を、PlayerStatesに反映させる"""
-    def ApplyMove(self, player: PlayerStates, delta: int, terrRects: Iterable[Rect]):
-        super().ApplyMove(player, delta, terrRects)
     
     """接触オブジェクトがない場合の移動（「接触：なし」として記録する）"""
     def _NoCollideMove(self, player: PlayerStates, delta: int):
@@ -156,10 +153,6 @@ class YAxisApplier(OneAxisApplier):
 class XAxisApplier(OneAxisApplier):
     def __init__(self) -> None:
         self.Verifier = XAxisVerifier()
-    
-    """引数で渡したPlayerStates、移動距離、画面表示されているオブジェクトのRectから接触状況に応じたX軸の移動結果を、PlayerStatesに反映させる"""
-    def ApplyMove(self, player: PlayerStates, delta: int, terrRects: Iterable[Rect]):
-        super().ApplyMove(player, delta, terrRects)
     
     """接触オブジェクトがない場合の移動（「接触：なし」として記録する）"""
     def _NoCollideMove(self, player: PlayerStates, delta: int):
