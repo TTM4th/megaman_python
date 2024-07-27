@@ -30,6 +30,8 @@ class Postudes(Enum):
     CrawLing = 5
     """のけぞり"""
     BendBack = 6
+    """ワープ"""
+    Warp = 7
 
 """Posutudesと同時に混在させられる姿勢"""
 class AdditionalPostudes(Enum):
@@ -62,28 +64,28 @@ class PrintEffects(Enum):
     """点滅"""
     Blink = 2
 
-"""1軸の進行方向"""
-class AxisDirection(Enum):
-    """負"""
-    Negative = -1
-    """正"""
-    Positive = 1
-
-"""衝突有無"""
-class CollideState(Enum):
-    """接触無"""
-    NoCollide = 0
-    """正方向に接触"""
-    IsCollidePositive = 1
-    """負方向に接触"""
-    IsCollideNegative = 2
+"""接触方向フラグ"""
+class ColideDirection(Enum):
+    """上"""
+    Upper = 1
+    """下"""
+    Bottom = 2
+    """左"""
+    Left = 3
+    """右"""
+    Right = 4
 
 """Playerの状態を一元管理するクラス"""    
 class PlayerStates:
     def __init__(self) -> None:
+        """プレイヤーの姿勢（外観向け：走行、空中、梯子掴み）"""
         self.Postude:Postudes
+        """プレイヤーの姿勢と付加可能な姿勢（外観向け：バスター構えなど）"""
+        self.AdditionalPostude:AdditionalPostudes
+        """プレイヤーのリアクション状態（内部的に識別する際に使う）"""
         self.ReactionState:ReactionState
-        self.Rect:Rect
+        """プレイヤーの当たり判定ボックス"""
+        self.HitBox:Rect
 
 """X,Y2軸の動きを反映させるためのロジックをまとめたクラス"""
 class ApplyContext:
@@ -91,24 +93,22 @@ class ApplyContext:
         self.blocker = ObjectBlocker()
 
     """引数で渡したPlayerStates、x移動距離、y移動距離、画面表示されているオブジェクトのRectから接触状況に応じた結果を、PlayerStatesを反映させる"""
-    def ApplyMotion(self, player:PlayerStates, terrRects:Iterable[Rect]):
-        terrs = [sender for sender in terrRects if player.Rect.colliderect(sender)]
+    def ApplyCollide(self, player:PlayerStates, terrRects:Iterable[Rect]):
+        terrs = [sender for sender in terrRects if player.HitBox.colliderect(sender)]
 
-        vertical = ColideDirectionFillter.GetColidedByVerticalBlocks(player.Rect, terrs)
-        if any(vertical[ColideDirection.Bottom]):
-            player.ReactionState = ReactionState.Land
-        else:
-            player.ReactionState = ReactionState.InAir
-        self.blocker.BlockByVertical(player.Rect, vertical)
+        vertical = ColideDirectionFillter.GetColidedByVerticalBlocks(player.HitBox, terrs)
+        player.ReactionState = ReactionState.Land if any(vertical[ColideDirection.Bottom]) else ReactionState.InAir
+        self.blocker.BlockByVertical(player.HitBox, vertical)
 
         if player.ReactionState == ReactionState.Land:
-            #ここLinqでいうexceptが欲しい
-            for list in vertical.values():
-                for val in list:terrs.remove(val)
-            holizonal = ColideDirectionFillter.GetColidedByHolizonalBlocks(player.Rect, terrs)
+            #上下接触したオブジェクトを除外したいんだけど、ここLinqでいうexceptが欲しい
+            flatten = [terr for exterrObjs in vertical.values() for terr in exterrObjs]
+            terrs = [terr for terr in terrs if terr not in flatten]
+            holizonal = ColideDirectionFillter.GetColidedByHolizonalBlocks(player.HitBox,terrs)
+            del(flatten)
         else:
-            holizonal = ColideDirectionFillter.GetColidedByHolizonalBlocks(player.Rect, terrs)
-        self.blocker.BlockByHolizonal(player.Rect, holizonal)
+            holizonal = ColideDirectionFillter.GetColidedByHolizonalBlocks(player.HitBox, terrs)
+        self.blocker.BlockByHolizonal(player.HitBox, holizonal)
         
         del(vertical)
         del(holizonal)
@@ -117,37 +117,40 @@ class ApplyContext:
 """接触を受けたオブジェクトの位置を接触したオブジェクト"""
 class ObjectBlocker:
     def __init__(self) -> None:
-        self.__VerticalActionDictionary:dict[ColideDirection, Callable[[Rect, Rect], None]] = {
+        """[Key:垂直方向（上下） Value:方向に応じた実行したいメソッド]をマップするDictionary"""
+        self.__MappedVerticalAction:dict[ColideDirection, Callable[[Rect, Rect], None]] = {
             ColideDirection.Bottom:BlockLocation.ContactBottom,
             ColideDirection.Upper:BlockLocation.ContactUpper,
         }
-        self.__HolizonalActionDictionary:dict[ColideDirection, Callable[[Rect, Rect], None]] ={
+        """[Key:水平方向（左右） Value:方向に応じて実行したいメソッド]をマップするDictionary"""
+        self.__MappedHolizonalAction:dict[ColideDirection, Callable[[Rect, Rect], None]] ={
             ColideDirection.Left:BlockLocation.ContactLeft,
             ColideDirection.Right:BlockLocation.ContactRight
         }
 
     """第1引数で受け取ったRectが"""
-    """第2引数の接触対象のRect配列から接触したオブジェクトがあれば"""
-    """接触したオブジェクトから受けた方向に応じて塞がれた場合の位置を第1引数のRectに反映させる"""
+    """第2引数の接触対象のRect配列から垂直方向に接触したオブジェクトがあれば"""
+    """接触したオブジェクトから受けた方向に応じて垂直方向に塞がれた場合の位置を第1引数のRectに反映させる"""
     def BlockByVertical(self, reciever:Rect, vertical:dict[ColideDirection, Iterable[Rect]]) -> None:
-        if any(vertical.values()) : self.__ApplyBlock(reciever, vertical, self.__VerticalActionDictionary)
+        if any(vertical.values()) : self.__ExecuteActions(reciever, vertical, self.__MappedVerticalAction)
+
+    """第1引数で受け取ったRectが"""
+    """第2引数の接触対象のRect配列から水平方向に接触したオブジェクトがあれば"""
+    """接触したオブジェクトから受けた方向に応じて水平方向に塞がれた場合の位置を第1引数のRectに反映させる"""
+    def BlockByHolizonal(self, reciever:Rect, holizonal:dict[ColideDirection, Iterable[Rect]]) -> None:
+        if any(holizonal.values()) : self.__ExecuteActions(reciever, holizonal, self.__MappedHolizonalAction)
 
     """第1引数で受け取ったRectが"""
     """第2引数の接触対象のRect配列から接触したオブジェクトがあれば"""
-    """接触したオブジェクトから受けた方向に応じて塞がれた場合の位置を第1引数のRectに反映させる"""
-    def BlockByHolizonal(self, reciever:Rect, holizonal:dict[ColideDirection, Iterable[Rect]]) -> None:
-        if any(holizonal.values()) : self.__ApplyBlock(reciever, holizonal, self.__HolizonalActionDictionary)
-
-    def __ApplyBlock(self, reciever:Rect, senders:dict[ColideDirection, Iterable[Rect]], actions:dict[ColideDirection, Callable[[Rect, Rect], None]]):
+    """第3引数で渡した接触方向に応じてマッピングしたメソッドを実行する"""
+    def __ExecuteActions(self, reciever:Rect, senders:dict[ColideDirection, Iterable[Rect]], actions:dict[ColideDirection, Callable[[Rect, Rect], None]]) -> None:
         for key, value in senders.items():
             if not(any(value)) : continue
             obj = next(value, None)
             if obj == None : continue
-            else:
-                actions[key](reciever, obj)
-                break
+            actions[key](reciever, obj)
+            break
         
-
 """第1引数のRectが第2引数のRectからふさがれた方向に応じた位置座標に更新する"""
 class BlockLocation:
 
@@ -171,26 +174,24 @@ class BlockLocation:
     def ContactLeft(reciever:Rect, sender:Rect) -> None:
         reciever.left = sender.right
 
-class ColideDirection(Enum):
-    Upper = 1
-    Bottom = 2
-    Left = 3
-    Right = 4
-
 """検知用接触オブジェクトを上下左右に絞るための関数セット"""
 class ColideDirectionFillter:
 
+    """引数で受け取った接触オブジェクトを水平方向で接触したものに絞り込む"""
     @staticmethod
     def GetColidedByHolizonalBlocks(reciever:Rect, colidedSenders:Iterable[Rect]):
-        lefts = ColideDirectionFillter.GetColideObjcts(reciever, colidedSenders, ColideDirectionFillter.IsLeftFillter)
-        rights = ColideDirectionFillter.GetColideObjcts(reciever, colidedSenders, ColideDirectionFillter.IsRightFillter)
-        return {ColideDirection.Left:lefts, ColideDirection.Right:rights}
+        return {
+            ColideDirection.Left:ColideDirectionFillter.GetColideObjcts(reciever, colidedSenders, ColideDirectionFillter.IsLeftFillter), 
+            ColideDirection.Right:ColideDirectionFillter.GetColideObjcts(reciever, colidedSenders, ColideDirectionFillter.IsRightFillter)
+            }
 
+    """引数で受け取った接触オブジェクトを垂直方向で接触したものに絞り込む"""
     @staticmethod
     def GetColidedByVerticalBlocks(reciever:Rect, colidedSenders:Iterable[Rect]):
-        uppers = ColideDirectionFillter.GetColideObjcts(reciever, colidedSenders, ColideDirectionFillter.IsUpperFillter)
-        bottoms = ColideDirectionFillter.GetColideObjcts(reciever, colidedSenders, ColideDirectionFillter.IsBottomFillter)
-        return {ColideDirection.Upper:uppers, ColideDirection.Bottom:bottoms}
+        return {
+            ColideDirection.Upper:ColideDirectionFillter.GetColideObjcts(reciever, colidedSenders, ColideDirectionFillter.IsUpperFillter), 
+            ColideDirection.Bottom:ColideDirectionFillter.GetColideObjcts(reciever, colidedSenders, ColideDirectionFillter.IsBottomFillter)
+            }
 
     """下方向：範囲"""
     @staticmethod
@@ -212,15 +213,15 @@ class ColideDirectionFillter:
     def IsLeftFillter(reciever:Rect, sender:Rect) -> bool:
         return sender.right > reciever.left and reciever.left > sender.left
 
-    """playerがLandの場合にfilter処理で追加する条件関数"""
-    @staticmethod
-    def IsLandAdditionalFillter(playerRect:Rect, terrObj:Rect) -> bool:
-        """オブジェクトの底がプレイヤーの頭から足の間にあれば、接地時のX軸接触オブジェクト検知の対象とする"""
-        return terrObj.bottom > playerRect.top and playerRect.bottom > terrObj.bottom
-
     """第1引数で指定したrecieverが"""
     """第2引数で指定したsendersの中から"""
     """第3引数で指定したpred関数を通じてtrueだったRectオブジェクトを引っ張り出す"""
     @staticmethod
     def GetColideObjcts(reciever:Rect, senders:Iterable[Rect], pred:Callable[[Rect, Rect], bool]):
         return (sender for sender in senders if pred(reciever, sender))
+
+    """（参考）playerがLandの場合にfilter処理で追加する条件関数"""
+    @staticmethod
+    def IsLandAdditionalFillter(playerRect:Rect, terrObj:Rect) -> bool:
+        """オブジェクトの底がプレイヤーの頭から足の間にあれば、接地時のX軸接触オブジェクト検知の対象とする"""
+        return terrObj.bottom > playerRect.top and playerRect.bottom > terrObj.bottom
