@@ -91,31 +91,28 @@ class ApplyContext:
         self.blocker = ObjectBlocker()
 
     """引数で渡したPlayerStates、x移動距離、y移動距離、画面表示されているオブジェクトのRectから接触状況に応じた結果を、PlayerStatesを反映させる"""
-    def ApplyMotion(self, player:PlayerStates, deltaX:int, deltaY:int, terrRects:Iterable[Rect]):
-        reciever = player.Rect.move(deltaX, deltaY)
-        terrs = [sender for sender in terrRects if reciever.colliderect(sender)]
+    def ApplyMotion(self, player:PlayerStates, terrRects:Iterable[Rect]):
+        terrs = [sender for sender in terrRects if player.Rect.colliderect(sender)]
 
-        vertical = ColideDirectionFillter.GetColidedByVerticalBlocks(reciever, terrs)
+        vertical = ColideDirectionFillter.GetColidedByVerticalBlocks(player.Rect, terrs)
         if any(vertical[ColideDirection.Bottom]):
             player.ReactionState = ReactionState.Land
         else:
             player.ReactionState = ReactionState.InAir
-        self.blocker.BlockByVertical(reciever, vertical)
+        self.blocker.BlockByVertical(player.Rect, vertical)
 
         if player.ReactionState == ReactionState.Land:
             #ここLinqでいうexceptが欲しい
             for list in vertical.values():
                 for val in list:terrs.remove(val)
-            holizonal = ColideDirectionFillter.GetColidedByHolizonalBlocks(reciever, terrs)
+            holizonal = ColideDirectionFillter.GetColidedByHolizonalBlocks(player.Rect, terrs)
         else:
-            holizonal = ColideDirectionFillter.GetColidedByHolizonalBlocks(reciever, terrs)
-        self.blocker.BlockByHolizonal(reciever, holizonal)
+            holizonal = ColideDirectionFillter.GetColidedByHolizonalBlocks(player.Rect, terrs)
+        self.blocker.BlockByHolizonal(player.Rect, holizonal)
         
-        player.Rect = reciever
         del(vertical)
         del(holizonal)
         del(terrs)
-        del(reciever)
 
 """接触を受けたオブジェクトの位置を接触したオブジェクト"""
 class ObjectBlocker:
