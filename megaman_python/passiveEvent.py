@@ -1,7 +1,7 @@
 from __future__ import annotations
 from enum import Enum
 from pygame import Rect
-from collections.abc import Iterable
+from collections.abc import Iterable, Callable
 
 """
 イベントの開始・継続・キャンセル状態フラグ
@@ -88,170 +88,142 @@ class PlayerStates:
 """X,Y2軸の動きを反映させるためのロジックをまとめたクラス"""
 class ApplyContext:
     def __init__(self) -> None:
-        self._XApplier = XAxisApplier()
-        self._YApplier = YAxisApplier()
+        self.blocker = ObjectBlocker()
 
     """引数で渡したPlayerStates、x移動距離、y移動距離、画面表示されているオブジェクトのRectから接触状況に応じた結果を、PlayerStatesを反映させる"""
     def ApplyMotion(self, player:PlayerStates, deltaX:int, deltaY:int, terrRects:Iterable[Rect]):
-        self._XApplier.ApplyMove(player, deltaX, terrRects)
-        self._YApplier.ApplyMove(player, deltaY, terrRects)
-        if self._YApplier.CollideState == CollideState.IsCollidePositive:
+        reciever = player.Rect.move(deltaX, deltaY)
+        terrs = [sender for sender in terrRects if reciever.colliderect(sender)]
+
+        vertical = ColideDirectionFillter.GetColidedByVerticalBlocks(reciever, terrs)
+        if any(vertical[ColideDirection.Bottom]):
             player.ReactionState = ReactionState.Land
-        elif self._YApplier.CollideState == CollideState.NoCollide and player.ReactionState == ReactionState.Land:
+        else:
             player.ReactionState = ReactionState.InAir
-            #player.Postude = Postudes.InAir
+        self.blocker.BlockByVertical(reciever, vertical)
 
-"""単軸の動きをPlayerStatesに反映させるためのロジッククラス"""
-class OneAxisApplier:
-    def __init__(self) -> None:
-        self.Verifier:OneAxisVerifier
-        """接触状態：取り扱いについては可読性を考慮して、値更新は当クラス内に収める（C#で言うPrivate setにする）"""
-        self.CollideState:CollideState = CollideState.NoCollide
-
-    """引数で渡したPlayerStates、移動距離、画面表示されているオブジェクトのRectから接触状況に応じた単軸の移動結果を、PlayerStatesに反映させる"""
-    def ApplyMove(self, player:PlayerStates, delta:int, terrRects:Iterable[Rect]):
-        collideObj = self.Verifier.GetFirstCollideObject(player, delta, terrRects)
-        if collideObj is None:
-            self.CollideState = CollideState.NoCollide
-            self._NoCollideMove(player, delta)
+        if player.ReactionState == ReactionState.Land:
+            #ここLinqでいうexceptが欲しい
+            for list in vertical.values():
+                for val in list:terrs.remove(val)
+            holizonal = ColideDirectionFillter.GetColidedByHolizonalBlocks(reciever, terrs)
         else:
-            if delta >= 0:
-                self.CollideState = CollideState.IsCollidePositive
-            else:
-                self.CollideState = CollideState.IsCollideNegative
-            self._IsCollideMove(player, delta, collideObj)
-
-    """接触オブジェクトがない場合の移動"""
-    def _NoCollideMove(self, player:PlayerStates, delta:int):
-        pass
-
-    """接触オブジェクトがある場合の移動"""
-    def _IsCollideMove(self, player:PlayerStates, delta:int, terrObj:Rect):
-        pass
-
-"""Y軸の動きをPlayerStatesに反映させるためのロジッククラス"""
-class YAxisApplier(OneAxisApplier):
-    def __init__(self) -> None:
-        self.Verifier = YAxisVerifier()
-    
-    """接触オブジェクトがない場合の移動（「接触：なし」として記録する）"""
-    def _NoCollideMove(self, player: PlayerStates, delta: int):
-        """空中 or ハシゴ"""
-        player.Rect.y += delta
+            holizonal = ColideDirectionFillter.GetColidedByHolizonalBlocks(reciever, terrs)
+        self.blocker.BlockByHolizonal(reciever, holizonal)
         
-    """接触オブジェクトがある場合の移動（負の方向なら「接触：負の方向あり」、正の方向なら「接触：正の方向あり」として記録する）"""
-    def _IsCollideMove(self, player: PlayerStates, delta: int, terrObj: Rect):
-        if delta > 0:
-            player.Rect.bottom = terrObj.top + 1
-        elif delta < 0:
-            """空中 or ハシゴ"""
-            player.Rect.top = terrObj.bottom
-        else:
-            return
+        player.Rect = reciever
+        del(vertical)
+        del(holizonal)
+        del(terrs)
+        del(reciever)
 
-"""X軸の動きをPlayerStatesに反映させるためのロジッククラス"""
-class XAxisApplier(OneAxisApplier):
+"""接触を受けたオブジェクトの位置を接触したオブジェクト"""
+class ObjectBlocker:
     def __init__(self) -> None:
-        self.Verifier = XAxisVerifier()
-    
-    """接触オブジェクトがない場合の移動（「接触：なし」として記録する）"""
-    def _NoCollideMove(self, player: PlayerStates, delta: int):
-        player.Rect.x += delta
+        self.__VerticalActionDictionary:dict[ColideDirection, Callable[[Rect, Rect], None]] = {
+            ColideDirection.Bottom:BlockLocation.ContactBottom,
+            ColideDirection.Upper:BlockLocation.ContactUpper,
+        }
+        self.__HolizonalActionDictionary:dict[ColideDirection, Callable[[Rect, Rect], None]] ={
+            ColideDirection.Left:BlockLocation.ContactLeft,
+            ColideDirection.Right:BlockLocation.ContactRight
+        }
 
-    """接触オブジェクトがある場合の移動（負の方向なら「接触：負の方向あり」、正の方向なら「接触：正の方向あり」として記録する）"""
-    def _IsCollideMove(self, player: PlayerStates, delta:int, terrObj: Rect):
-        if delta > 0:
-            player.Rect.right = terrObj.left
-        elif delta < 0:
-            player.Rect.left = terrObj.right
-        else:
-            return
+    """第1引数で受け取ったRectが"""
+    """第2引数の接触対象のRect配列から接触したオブジェクトがあれば"""
+    """接触したオブジェクトから受けた方向に応じて塞がれた場合の位置を第1引数のRectに反映させる"""
+    def BlockByVertical(self, reciever:Rect, vertical:dict[ColideDirection, Iterable[Rect]]) -> None:
+        if any(vertical.values()) : self.__ApplyBlock(reciever, vertical, self.__VerticalActionDictionary)
 
-"""プレイヤーの1軸の進行方向から衝突検証を行うロジッククラス"""
-class OneAxisVerifier:
+    """第1引数で受け取ったRectが"""
+    """第2引数の接触対象のRect配列から接触したオブジェクトがあれば"""
+    """接触したオブジェクトから受けた方向に応じて塞がれた場合の位置を第1引数のRectに反映させる"""
+    def BlockByHolizonal(self, reciever:Rect, holizonal:dict[ColideDirection, Iterable[Rect]]) -> None:
+        if any(holizonal.values()) : self.__ApplyBlock(reciever, holizonal, self.__HolizonalActionDictionary)
 
-    """接触した最初のオブジェクトを取得する"""
-    def GetFirstCollideObject(self, player:PlayerStates, delta:int, terrRects:Iterable[Rect]):
-        if delta < 0 : fnc = self._NegativeFunc
-        else : fnc = self._PositiveFunc
-        pred = self._PredicateRectLocation(player.Rect, delta)
-        filtered = (_ for _ in terrRects if fnc(player.ReactionState, pred, _))
-        return Funcset.TestGetColidedObject(pred, filtered)
+    def __ApplyBlock(self, reciever:Rect, senders:dict[ColideDirection, Iterable[Rect]], actions:dict[ColideDirection, Callable[[Rect, Rect], None]]):
+        for key, value in senders.items():
+            if not(any(value)) : continue
+            obj = next(value, None)
+            if obj == None : continue
+            else:
+                actions[key](reciever, obj)
+                break
+        
 
-    """deltaが正の場合の衝突判定対象関数"""
-    def _PositiveFunc(self, reactionStatus:ReactionState , rect:Rect, terrObj:Rect) -> bool:
-        pass
-
-    """deltaが負の場合の衝突判定対象関数"""
-    def _NegativeFunc(self, reactionStatus:ReactionState, rect:Rect, terrObj:Rect) -> bool:
-        pass
-
-    """第2引数で渡した移動値に移動したRectを返す"""
-    def _PredicateRectLocation(self, orgRect:Rect, delta:int) -> Rect:
-        pass
-
-"""プレイヤーのY軸進行方向から衝突検証を行うロジッククラス"""
-class YAxisVerifier(OneAxisVerifier):
-
-    def _PositiveFunc(self, reactionStatus:ReactionState, rect:Rect, terrObj: Rect) -> bool:
-        return Funcset.IsBottomFillter(rect, terrObj)
-    
-    def _NegativeFunc(self, reactionStatus:ReactionState , rect:Rect, terrObj: Rect) -> bool:
-        return Funcset.IsUpperFillter(rect, terrObj)
-
-    def _PredicateRectLocation(self, orgRect: Rect, delta: int) -> Rect:
-        return orgRect.move(0, delta)
-
-"""プレイヤーのX軸進行方向から衝突検証を行うロジッククラス"""
-class XAxisVerifier(OneAxisVerifier):
-
-    def _PositiveFunc(self, reactionStatus:ReactionState, rect:Rect, terrObj: Rect) -> bool:
-        if reactionStatus == ReactionState.Land:
-            return Funcset.IsRightFillter(rect, terrObj) and Funcset.IsLandAdditionalFillter(rect, terrObj)
-        else :
-            return Funcset.IsRightFillter(rect, terrObj)
-    
-    def _NegativeFunc(self, reactionStatus:ReactionState, rect:Rect, terrObj: Rect) -> bool:
-        if reactionStatus == ReactionState.Land:
-            return Funcset.IsLeftFillter(rect, terrObj) and Funcset.IsLandAdditionalFillter(rect, terrObj)
-        else :
-            return Funcset.IsLeftFillter(rect, terrObj)
-
-    def _PredicateRectLocation(self, orgRect: Rect, delta: int) -> Rect:
-        return orgRect.move(delta, 0)
-
-"""検知用接触オブジェクトを上下左右に絞るための関数セット"""
-class Funcset:
+"""第1引数のRectが第2引数のRectからふさがれた方向に応じた位置座標に更新する"""
+class BlockLocation:
 
     """下方向"""
     @staticmethod
-    def IsBottomFillter(playerRect:Rect, terrObj:Rect) -> bool:
-        return terrObj.top < playerRect.bottom and playerRect.bottom < terrObj.bottom
+    def ContactBottom(reciever:Rect, sender:Rect) -> None:
+        reciever.bottom = sender.top + 1 
 
     """上方向"""
     @staticmethod
-    def IsUpperFillter(playerRect:Rect, terrObj:Rect) -> bool:
-        return terrObj.bottom > playerRect.top and playerRect.top > terrObj.top
-    
+    def ContactUpper(recievier:Rect, sender:Rect) -> None:
+        recievier.top = sender.bottom
+
     """右方向"""
     @staticmethod
-    def IsRightFillter(playerRect:Rect, terrObj:Rect) -> bool:
-        return terrObj.left < playerRect.right and playerRect.right < terrObj.right
+    def ContactRight(reciever:Rect, sender:Rect) -> None:
+        reciever.right = sender.left
     
     """左方向"""
     @staticmethod
-    def IsLeftFillter(playerRect:Rect, terrObj:Rect) -> bool:
-        return terrObj.right > playerRect.left and playerRect.left > terrObj.left
+    def ContactLeft(reciever:Rect, sender:Rect) -> None:
+        reciever.left = sender.right
+
+class ColideDirection(Enum):
+    Upper = 1
+    Bottom = 2
+    Left = 3
+    Right = 4
+
+"""検知用接触オブジェクトを上下左右に絞るための関数セット"""
+class ColideDirectionFillter:
+
+    @staticmethod
+    def GetColidedByHolizonalBlocks(reciever:Rect, colidedSenders:Iterable[Rect]):
+        lefts = ColideDirectionFillter.GetColideObjcts(reciever, colidedSenders, ColideDirectionFillter.IsLeftFillter)
+        rights = ColideDirectionFillter.GetColideObjcts(reciever, colidedSenders, ColideDirectionFillter.IsRightFillter)
+        return {ColideDirection.Left:lefts, ColideDirection.Right:rights}
+
+    @staticmethod
+    def GetColidedByVerticalBlocks(reciever:Rect, colidedSenders:Iterable[Rect]):
+        uppers = ColideDirectionFillter.GetColideObjcts(reciever, colidedSenders, ColideDirectionFillter.IsUpperFillter)
+        bottoms = ColideDirectionFillter.GetColideObjcts(reciever, colidedSenders, ColideDirectionFillter.IsBottomFillter)
+        return {ColideDirection.Upper:uppers, ColideDirection.Bottom:bottoms}
+
+    """下方向：範囲"""
+    @staticmethod
+    def IsBottomFillter(reciever:Rect, sender:Rect) -> bool:
+        return sender.top < reciever.bottom and reciever.bottom < sender.bottom
+
+    """上方向：範囲"""
+    @staticmethod
+    def IsUpperFillter(reciever:Rect, sender:Rect) -> bool:
+        return sender.bottom > reciever.top and reciever.top > sender.top
+    
+    """右方向：範囲"""
+    @staticmethod
+    def IsRightFillter(reciever:Rect, sender:Rect) -> bool:
+        return sender.left < reciever.right and reciever.right < sender.right
+    
+    """左方向：範囲"""
+    @staticmethod
+    def IsLeftFillter(reciever:Rect, sender:Rect) -> bool:
+        return sender.right > reciever.left and reciever.left > sender.left
 
     """playerがLandの場合にfilter処理で追加する条件関数"""
     @staticmethod
     def IsLandAdditionalFillter(playerRect:Rect, terrObj:Rect) -> bool:
         """オブジェクトの底がプレイヤーの頭から足の間にあれば、接地時のX軸接触オブジェクト検知の対象とする"""
         return terrObj.bottom > playerRect.top and playerRect.bottom > terrObj.bottom
-    
-    """第1引数で渡したプレイヤーBoxが"""
-    """第2引数で渡したオブジェクトに接触したオブジェクトが存在するか試しにとる"""
-    """存在しない場合はNoneを返す"""
+
+    """第1引数で指定したrecieverが"""
+    """第2引数で指定したsendersの中から"""
+    """第3引数で指定したpred関数を通じてtrueだったRectオブジェクトを引っ張り出す"""
     @staticmethod
-    def TestGetColidedObject(playerRect:Rect, fillteredObjs:Iterable[Rect]):
-        return next((_ for _ in fillteredObjs if playerRect.colliderect(_)), None)
+    def GetColideObjcts(reciever:Rect, senders:Iterable[Rect], pred:Callable[[Rect, Rect], bool]):
+        return (sender for sender in senders if pred(reciever, sender))
