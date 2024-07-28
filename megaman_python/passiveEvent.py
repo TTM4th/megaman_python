@@ -92,7 +92,7 @@ class ApplyContext:
     def __init__(self) -> None:
         self.blocker = ObjectBlocker()
 
-    """引数で渡したPlayerStates、x移動距離、y移動距離、画面表示されているオブジェクトのRectから接触状況に応じた結果を、PlayerStatesを反映させる"""
+    """引数で渡したPlayerStates、画面表示されているオブジェクトのRectから接触状況に応じた結果を、PlayerStatesを反映させる"""
     def ApplyCollide(self, player:PlayerStates, terrRects:Iterable[Rect]):
         terrs = [sender for sender in terrRects if player.HitBox.colliderect(sender)]
 

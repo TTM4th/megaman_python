@@ -45,7 +45,7 @@ class Test_InputEvent(TestCase):
                 InputEvent.InputKey.RIGHT : InputEvent.InputState.NoneInput,
                 InputEvent.InputKey.FIRE : InputEvent.InputState.NoneInput,
                 InputEvent.InputKey.JUMP : InputEvent.InputState.NoneInput}
-        self.test_keyInput.catchInput([])
+        self.test_keyInput.CatchInput([])
         self.assertDictEqual(ans, self.test_keyInput.InputtedStates)
 
     """
@@ -66,7 +66,7 @@ class Test_InputEvent(TestCase):
                 InputEvent.InputKey.RIGHT : InputEvent.InputState.Start,
                 InputEvent.InputKey.FIRE : InputEvent.InputState.Start,
                 InputEvent.InputKey.JUMP : InputEvent.InputState.Start}
-        self.test_keyInput.catchInput(params)
+        self.test_keyInput.CatchInput(params)
         self.assertDictEqual(ans, self.test_keyInput.InputtedStates)
 
     """
@@ -87,7 +87,7 @@ class Test_InputEvent(TestCase):
                 InputEvent.InputKey.RIGHT : InputEvent.InputState.NoneInput,
                 InputEvent.InputKey.FIRE : InputEvent.InputState.NoneInput,
                 InputEvent.InputKey.JUMP : InputEvent.InputState.NoneInput}
-        self.test_keyInput.catchInput([])
+        self.test_keyInput.CatchInput([])
         self.assertDictEqual(ans, self.test_keyInput.InputtedStates)
 
     """
@@ -112,7 +112,7 @@ class Test_InputEvent(TestCase):
                 InputEvent.InputKey.RIGHT : InputEvent.InputState.NoneInput,
                 InputEvent.InputKey.FIRE : InputEvent.InputState.Start,
                 InputEvent.InputKey.JUMP : InputEvent.InputState.NoneInput}
-        self.test_keyInput.catchInput(params)
+        self.test_keyInput.CatchInput(params)
         self.assertDictEqual(ans, self.test_keyInput.InputtedStates)
     
     """
@@ -140,7 +140,7 @@ class Test_InputEvent(TestCase):
                 InputEvent.InputKey.RIGHT : InputEvent.InputState.Continue,
                 InputEvent.InputKey.FIRE : InputEvent.InputState.NoneInput,
                 InputEvent.InputKey.JUMP : InputEvent.InputState.Start}
-        self.test_keyInput.catchInput(params)
+        self.test_keyInput.CatchInput(params)
         self.assertDictEqual(ans, self.test_keyInput.InputtedStates)
     
     
