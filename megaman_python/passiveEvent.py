@@ -7,42 +7,87 @@ from collections.abc import Iterable, Callable
 イベントの開始・継続・キャンセル状態フラグ
 """
 class EventState(Enum):
-    """未発生"""
     NotRaised = 0
-    """イベント開始"""
+    """未発生"""
+    
     Start = 1
-    """イベント継続"""
+    """イベント開始"""
+    
     Continue = 2
-    """イベント解除"""
+    """イベント継続"""
+    
     Cancel = 3
+    """イベント解除"""
+
+class PlayerParameter(Enum):
+    Health = 28
+    """初期体力"""
+
+class PlayerStatusTimeFrame(Enum):
+    HitKnockBack = 60
+    """被弾のけぞりフレーム"""
+    
+    Invisible = 120
+    """無敵時間フレーム"""
+    
+    Crawling = 6
+    """梯子這い上がり時間フレーム"""
+    
+    Step = 6
+    """直立→走り出しの踏み込み時間フレーム"""
+    
+    Fire= 15
+    """発射姿勢をとるフレーム"""
+    
+    Jumping = 20
+    """ジャンプ有効時間フレーム"""
+
+class PlayerAnimeTimeFrame(Enum):
+    StandingAnime = 180
+    """直立まばたき1ループ時間フレーム"""
+    
+    RunAnime = 32
+    """走行アニメ１ループ時間フレーム"""
+    
+    ClimbAnime = 20
+    """梯子登り １ループ時間フレーム"""
 
 """プレイヤー姿勢種別"""
 class Postudes(Enum):
-    """直立"""
     Stand = 0
-    """空中"""
+    """直立"""
+    
     InAir = 1
-    """走行"""
+    """空中"""
+    
+    Stepping = 2
+    """踏み込み"""
+    
     Running = 3
-    """梯子掴み"""
+    """走行"""
+    
     GrepLadder = 4
-    """梯子這い上がり"""
+    """梯子掴み"""
+    
     CrawLing = 5
-    """のけぞり"""
+    """梯子這い上がり"""
+    
     BendBack = 6
-    """ワープ"""
+    """のけぞり"""
+    
     Warp = 7
+    """ワープ"""
 
 """Posutudesと同時に混在させられる姿勢"""
 class AdditionalPostudes(Enum):
-    """構えなし"""
     Neutral = 0
-    """バスター構え"""
+    """構えなし"""
     Fire = 1
-    """抱え込み"""
+    """バスター構え"""
     Hold = 2
-    """投げ"""
+    """抱え込み"""
     Throw = 3
+    """投げ"""
 
 """周りから受けたことによるプレイヤーのリアクション状態"""
 class ReactionState(Enum):
@@ -57,35 +102,49 @@ class ReactionState(Enum):
 
 """プレイヤーの表示効果"""
 class PrintEffects(Enum):
-    """何もなし"""
     Neutral = 0
-    """被弾"""
+    """何もなし"""
+    
     Hit = 1
-    """点滅"""
+    """被弾"""
+
     Blink = 2
+    """点滅"""
 
 """接触方向フラグ"""
 class ColideDirection(Enum):
-    """上"""
     Upper = 1
-    """下"""
+    """上"""
+
     Bottom = 2
-    """左"""
+    """下"""
+    
     Left = 3
-    """右"""
+    """左"""
+
     Right = 4
+    """右"""
 
 """Playerの状態を一元管理するクラス"""    
 class PlayerStates:
     def __init__(self) -> None:
-        """プレイヤーの姿勢（外観向け：走行、空中、梯子掴み）"""
         self.Postude:Postudes
-        """プレイヤーの姿勢と付加可能な姿勢（外観向け：バスター構えなど）"""
+        """プレイヤーの姿勢（外観向け：走行、空中、梯子掴み）"""
+
         self.AdditionalPostude:AdditionalPostudes
-        """プレイヤーのリアクション状態（内部的に識別する際に使う）"""
+        """プレイヤーの姿勢と付加可能な姿勢（外観向け：バスター構えなど）"""
+
         self.ReactionState:ReactionState
-        """プレイヤーの当たり判定ボックス"""
+        """プレイヤーのリアクション状態（内部的に識別する際に使う）"""
+
         self.HitBox:Rect
+        """プレイヤーの当たり判定ボックス"""
+        
+        self.PrintEffect = PrintEffects.Neutral
+        """表示効果"""
+
+        self.Health = PlayerParameter.Health
+        """プレイヤー体力"""
 
 """X,Y2軸の動きを反映させるためのロジックをまとめたクラス"""
 class ApplyContext:
@@ -113,6 +172,15 @@ class ApplyContext:
         del(vertical)
         del(holizonal)
         del(terrs)
+
+    """"""
+    def ApplyHit(self, player:PlayerStates, enemyRects:Iterable[Rect], enemyAttack:int):
+        enemies = next((sender for sender in enemyRects if player.HitBox.collidedict(sender)), None)
+        if enemies == None or player.ReactionState == ReactionState.Hit : pass
+        player.ReactionState = ReactionState.Hit
+        player.Health -= enemyAttack
+        player.Postude = Postudes.BendBack
+        player.PrintEffect = PrintEffects.Hit
 
 """接触を受けたオブジェクトの位置を接触したオブジェクト"""
 class ObjectBlocker:
