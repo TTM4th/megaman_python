@@ -151,8 +151,8 @@ class ApplyContext:
     def __init__(self) -> None:
         self.blocker = ObjectBlocker()
 
-    """引数で渡したPlayerStates、画面表示されているオブジェクトのRectから接触状況に応じた結果を、PlayerStatesを反映させる"""
     def ApplyCollide(self, player:PlayerStates, terrRects:Iterable[Rect]):
+        """引数で渡したPlayerStates、画面表示されているオブジェクトのRectから接触状況に応じた結果を、PlayerStatesを反映させる"""
         terrs = [sender for sender in terrRects if player.HitBox.colliderect(sender)]
 
         vertical = ColideDirectionFillter.GetColidedByVerticalBlocks(player.HitBox, terrs)
@@ -185,16 +185,16 @@ class ApplyContext:
 """接触を受けたオブジェクトの位置を接触したオブジェクト"""
 class ObjectBlocker:
     def __init__(self) -> None:
-        """[Key:垂直方向（上下） Value:方向に応じた実行したいメソッド]をマップするDictionary"""
         self.__MappedVerticalAction:dict[ColideDirection, Callable[[Rect, Rect], None]] = {
             ColideDirection.Bottom:BlockLocation.ContactBottom,
             ColideDirection.Upper:BlockLocation.ContactUpper,
         }
-        """[Key:水平方向（左右） Value:方向に応じて実行したいメソッド]をマップするDictionary"""
+        """[Key:垂直方向（上下） Value:方向に応じた実行したいメソッド]をマップするDictionary"""
         self.__MappedHolizonalAction:dict[ColideDirection, Callable[[Rect, Rect], None]] ={
             ColideDirection.Left:BlockLocation.ContactLeft,
             ColideDirection.Right:BlockLocation.ContactRight
         }
+        """[Key:水平方向（左右） Value:方向に応じて実行したいメソッド]をマップするDictionary"""
 
     """第1引数で受け取ったRectが"""
     """第2引数の接触対象のRect配列から垂直方向に接触したオブジェクトがあれば"""
@@ -219,66 +219,66 @@ class ObjectBlocker:
             actions[key](reciever, obj)
             break
         
-"""第1引数のRectが第2引数のRectからふさがれた方向に応じた位置座標に更新する"""
 class BlockLocation:
+    """第1引数のRectが第2引数のRectからふさがれた方向に応じた位置座標に更新する"""
 
-    """下方向"""
     @staticmethod
     def ContactBottom(reciever:Rect, sender:Rect) -> None:
+        """下方向"""
         reciever.bottom = sender.top + 1 
 
-    """上方向"""
     @staticmethod
     def ContactUpper(recievier:Rect, sender:Rect) -> None:
+        """上方向"""
         recievier.top = sender.bottom
 
-    """右方向"""
     @staticmethod
     def ContactRight(reciever:Rect, sender:Rect) -> None:
+        """右方向"""
         reciever.right = sender.left
     
-    """左方向"""
     @staticmethod
     def ContactLeft(reciever:Rect, sender:Rect) -> None:
+        """左方向"""
         reciever.left = sender.right
 
-"""検知用接触オブジェクトを上下左右に絞るための関数セット"""
 class ColideDirectionFillter:
+    """検知用接触オブジェクトを上下左右に絞るための関数セット"""
 
-    """引数で受け取った接触オブジェクトを水平方向で接触したものに絞り込む"""
     @staticmethod
     def GetColidedByHolizonalBlocks(reciever:Rect, colidedSenders:Iterable[Rect]):
+        """引数で受け取った接触オブジェクトを水平方向で接触したものに絞り込む"""
         return {
             ColideDirection.Left:ColideDirectionFillter.GetColideObjcts(reciever, colidedSenders, ColideDirectionFillter.IsLeftFillter), 
             ColideDirection.Right:ColideDirectionFillter.GetColideObjcts(reciever, colidedSenders, ColideDirectionFillter.IsRightFillter)
             }
 
-    """引数で受け取った接触オブジェクトを垂直方向で接触したものに絞り込む"""
     @staticmethod
     def GetColidedByVerticalBlocks(reciever:Rect, colidedSenders:Iterable[Rect]):
+        """引数で受け取った接触オブジェクトを垂直方向で接触したものに絞り込む"""
         return {
             ColideDirection.Upper:ColideDirectionFillter.GetColideObjcts(reciever, colidedSenders, ColideDirectionFillter.IsUpperFillter), 
             ColideDirection.Bottom:ColideDirectionFillter.GetColideObjcts(reciever, colidedSenders, ColideDirectionFillter.IsBottomFillter)
             }
 
-    """下方向：範囲"""
     @staticmethod
     def IsBottomFillter(reciever:Rect, sender:Rect) -> bool:
+        """下方向：範囲"""
         return sender.top < reciever.bottom and reciever.bottom < sender.bottom
 
-    """上方向：範囲"""
     @staticmethod
     def IsUpperFillter(reciever:Rect, sender:Rect) -> bool:
+        """上方向：範囲"""
         return sender.bottom > reciever.top and reciever.top > sender.top
     
-    """右方向：範囲"""
     @staticmethod
     def IsRightFillter(reciever:Rect, sender:Rect) -> bool:
+        """右方向：範囲"""
         return sender.left < reciever.right and reciever.right < sender.right
     
-    """左方向：範囲"""
     @staticmethod
     def IsLeftFillter(reciever:Rect, sender:Rect) -> bool:
+        """左方向：範囲"""
         return sender.right > reciever.left and reciever.left > sender.left
 
     """第1引数で指定したrecieverが"""
@@ -287,9 +287,3 @@ class ColideDirectionFillter:
     @staticmethod
     def GetColideObjcts(reciever:Rect, senders:Iterable[Rect], pred:Callable[[Rect, Rect], bool]):
         return (sender for sender in senders if pred(reciever, sender))
-
-    """（参考）playerがLandの場合にfilter処理で追加する条件関数"""
-    @staticmethod
-    def IsLandAdditionalFillter(playerRect:Rect, terrObj:Rect) -> bool:
-        """オブジェクトの底がプレイヤーの頭から足の間にあれば、接地時のX軸接触オブジェクト検知の対象とする"""
-        return terrObj.bottom > playerRect.top and playerRect.bottom > terrObj.bottom
